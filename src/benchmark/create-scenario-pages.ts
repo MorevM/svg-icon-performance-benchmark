@@ -101,6 +101,19 @@ const getIconSource = (iconName: string): string => withBasePath(`/svg/${iconNam
 const getStackedSpriteSource = (iconName: string): string => withBasePath(`/stacked-sprite.svg#${iconName}`);
 const getSymbolSpriteSource = (iconName: string): string => withBasePath(`/symbol-sprite.svg#${iconName}`);
 
+/**
+ * Creates raw icon markup shared by generated pages and client-side runtime tests.
+ *
+ * Vue renderers return an empty array because their components consume icon names directly.
+ *
+ * @param   renderer    Markup implementation to create.
+ * @param   iconNames   Ordered icon names for the scenario.
+ * @param   icons       Source SVG contents keyed by icon name.
+ *
+ * @returns             One markup fragment per icon for browser-native renderers.
+ *
+ * @throws When the renderer is not part of the benchmark matrix.
+ */
 const createItemsMarkup = (
 	renderer: BenchmarkRenderer,
 	iconNames: string[],
@@ -273,5 +286,5 @@ const createBenchmarkPages = (): BenchmarkPageDefinition[] => {
 	});
 };
 
-export { createBenchmarkPages };
+export { createBenchmarkPages, createItemsMarkup };
 export type { BenchmarkPageDefinition, BenchmarkPageKind, BenchmarkPageProps };

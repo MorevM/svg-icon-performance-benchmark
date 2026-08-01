@@ -17,6 +17,9 @@ const data = benchmarkScenarioGroups.map((group) => {
 	return {
 		text: group.name,
 		items: [
+			...(group.matrix === 'bonus'
+				? [{ text: 'Runtime test', link: withBasePath('/runtime/') }]
+				: []),
 			...group.scenarios.map((scenario) => {
 				return {
 					text: scenario.name,

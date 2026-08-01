@@ -1,0 +1,178 @@
+.runtime-test {
+	display: block grid;
+	gap: 20px;
+	padding-block-end: 48px;
+
+	&__panel {
+		position: sticky;
+		inset-block-start: var(--header-height);
+		z-index: 1;
+		display: block grid;
+		gap: 20px;
+		padding: 20px;
+		background-color: var(--app--background-color);
+		border: 1px solid var(--app--border-color);
+		border-radius: 12px;
+		box-shadow: var(--app--box-shadow);
+
+		@media (width >= 760px) {
+			grid-template-columns: minmax(260px, .7fr) minmax(440px, 1.3fr);
+			align-items: center;
+		}
+	}
+
+	&__stats {
+		display: block grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+		text-align: center;
+	}
+
+	&__stat {
+		padding: 12px;
+		background-color: #f7f7f7;
+		border-radius: 8px;
+
+		dt {
+			color: var(--text-secondary-color);
+			font-size: 13px;
+		}
+
+		dd {
+			margin-block-start: 4px;
+			font-size: clamp(20px, 3vi, 30px);
+			line-height: 1.1;
+			font-variant-numeric: tabular-nums;
+		}
+	}
+
+	&__form {
+		display: block grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+
+		@media (width >= 600px) {
+			grid-template-columns: minmax(0, 1fr) minmax(110px, .35fr) minmax(90px, .25fr);
+		}
+	}
+
+	&__field {
+		display: block grid;
+		gap: 6px;
+		min-inline-size: 0;
+		color: var(--text-secondary-color);
+		font-size: 13px;
+
+		&--method {
+			grid-column: 1 / -1;
+
+			@media (width >= 600px) {
+				grid-column: auto;
+			}
+		}
+
+		select,
+		input {
+			inline-size: 100%;
+			min-block-size: 44px;
+			padding: 8px 10px;
+			color: var(--color-text);
+			font: inherit;
+			font-size: 16px;
+			background-color: #ffffff;
+			border: 1px solid #cccccc;
+			border-radius: 6px;
+
+			&:focus-visible {
+				border-color: var(--color-primary);
+				outline: 2px solid rgb(34 0 255 / .2);
+				outline-offset: 1px;
+			}
+		}
+	}
+
+	&__action-row {
+		display: block flex;
+		grid-column: 1 / -1;
+		gap: 16px;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	&__last-run,
+	&__status,
+	&__description {
+		color: var(--text-secondary-color);
+		font-size: 14px;
+	}
+
+	&__run {
+		min-block-size: 44px;
+		padding: 10px 20px;
+		color: #ffffff;
+		font: inherit;
+		font-weight: 600;
+		background-color: var(--color-primary);
+		border-radius: 6px;
+		cursor: pointer;
+
+		&:hover {
+			background-color: var(--color-primary-light);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-primary-dark);
+			outline-offset: 2px;
+		}
+
+		&:disabled {
+			opacity: .6;
+			cursor: wait;
+		}
+	}
+
+	&__description {
+		max-inline-size: 880px;
+		line-height: 1.6;
+	}
+
+	&__output {
+		min-block-size: 120px;
+		padding-block: 20px;
+		border-block-start: 1px solid var(--app--border-color);
+
+		&:empty::before {
+			content: 'Run the test to create icons in this grid.';
+			display: block flow;
+			grid-column: 1 / -1;
+			color: var(--text-secondary-color);
+		}
+
+		svg {
+			fill: currentColor;
+
+			&:hover {
+				color: red;
+			}
+		}
+
+		.background-image,
+		.mask-image {
+			inline-size: 24px;
+			block-size: 24px;
+		}
+
+		.background-image {
+			background-image: var(--background-image);
+		}
+
+		.mask-image {
+			background-color: #000000;
+			mask-image: var(--mask-image);
+
+			&:hover {
+				background-color: red;
+			}
+		}
+	}
+}

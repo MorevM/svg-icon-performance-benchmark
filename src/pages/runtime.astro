@@ -1,0 +1,380 @@
+---
+import { createSymbolSprite, fetchAllSvg, withBasePath } from '#utils';
+import { createItemsMarkup } from '~benchmark/create-scenario-pages';
+import { benchmarkScenarioGroups } from '~benchmark/scenarios';
+import PageTitle from '~components/page-title/page-title.astro';
+import LayoutDefault from '~layouts/layout-default/layout-default.astro';
+import type { BenchmarkRenderer } from '~benchmark/scenarios';
+
+import '~components/icons-grid/icons-grid.scss';
+import './runtime.scss';
+
+const icons = fetchAllSvg();
+const iconNames = Object.keys(icons).toSorted((firstName, secondName) => firstName.localeCompare(secondName));
+const iconSources = iconNames.map((iconName) => withBasePath(`/svg/${iconName}.svg`));
+const stackedSpriteSource = withBasePath('/stacked-sprite.svg');
+const symbolSpriteSource = withBasePath('/symbol-sprite.svg');
+
+const getPreloadSources = (renderer: BenchmarkRenderer): string[] => {
+	switch (renderer) {
+		case 'img-icon':
+		case 'img-icon-lazy':
+		case 'background-icon':
+		case 'mask-icon':
+			return iconSources;
+
+		case 'img-stacked-sprite':
+		case 'background-stacked-sprite':
+		case 'mask-stacked-sprite':
+			return [stackedSpriteSource];
+
+		case 'external-symbol-sprite':
+			return [symbolSpriteSource];
+
+		default:
+			return [];
+	}
+};
+
+const runtimeScenarioGroups = benchmarkScenarioGroups
+	.filter((group) => group.matrix === 'main')
+	.map((group) => {
+		return {
+			name: group.name,
+			scenarios: group.scenarios.map((scenario) => {
+				return {
+					id: scenario.id,
+					label: `${group.name} — ${scenario.name}`,
+					renderer: scenario.renderer,
+					preloadSources: getPreloadSources(scenario.renderer),
+					items: createItemsMarkup(scenario.renderer, iconNames, icons).map((item) => {
+						return `<li class="icons-grid__item">${item}</li>`;
+					}),
+				};
+			}),
+		};
+	});
+const runtimeCatalog = runtimeScenarioGroups.flatMap((group) => group.scenarios);
+const serializedCatalog = JSON.stringify(runtimeCatalog).replaceAll('<', '\\u003c');
+const inlinedSymbolSprite = createSymbolSprite(icons).replace('<svg ', '<svg hidden ');
+---
+
+<LayoutDefault lang="en" title="Runtime SVG icon stress test">
+	<!-- Page heading -->
+	<PageTitle title="Runtime SVG icon stress test" slot="title" />
+
+	<!-- Inlined symbol sprite -->
+	<Fragment set:html={inlinedSymbolSprite} />
+
+	<!-- Runtime benchmark -->
+	<section class="runtime-test" aria-describedby="runtime-test-description">
+		<div class="runtime-test__panel">
+			<dl class="runtime-test__stats" aria-live="polite">
+				<div class="runtime-test__stat">
+					<dt>DOM + layout median</dt>
+					<dd id="runtime-dom-time">–</dd>
+				</div>
+				<div class="runtime-test__stat">
+					<dt>Per icon median</dt>
+					<dd id="runtime-per-icon-time">–</dd>
+				</div>
+				<div class="runtime-test__stat">
+					<dt>Frame latency median</dt>
+					<dd id="runtime-frame-time">–</dd>
+				</div>
+				<div class="runtime-test__stat">
+					<dt>Frame range</dt>
+					<dd id="runtime-frame-range">–</dd>
+				</div>
+			</dl>
+
+			<form class="runtime-test__form" id="runtime-form">
+				<label class="runtime-test__field runtime-test__field--method">
+					<span>Method</span>
+					<select id="runtime-method" name="method">
+						{
+							runtimeScenarioGroups.map((group) => (
+								<optgroup label={group.name}>
+									{ group.scenarios.map((scenario) => (
+										<option value={scenario.id}>{scenario.label}</option>
+									)) }
+								</optgroup>
+							))
+						}
+					</select>
+				</label>
+
+				<label class="runtime-test__field">
+					<span>Total icons</span>
+					<input
+						id="runtime-icon-count"
+						name="count"
+						type="number"
+						inputmode="numeric"
+						min="1"
+						max="50000"
+						step="1"
+						value="1000"
+					/>
+				</label>
+
+				<label class="runtime-test__field">
+					<span>Measured runs</span>
+					<input
+						id="runtime-run-count"
+						name="runs"
+						type="number"
+						inputmode="numeric"
+						min="3"
+						max="15"
+						step="2"
+						value="7"
+					/>
+				</label>
+
+				<div class="runtime-test__action-row">
+					<p class="runtime-test__last-run">Last run: <span id="runtime-last-run">Never</span></p>
+					<button class="runtime-test__run" id="runtime-run" type="submit">Run</button>
+				</div>
+			</form>
+		</div>
+
+		<p class="runtime-test__status" id="runtime-status" aria-live="polite">Ready to render.</p>
+		<p class="runtime-test__description" id="runtime-test-description">
+			This client-side microbenchmark reuses the exact icon markup from the generated browser-native scenario pages.
+			String generation and external-source warming happen before one discarded warm-up and 3–15 measured runs. Each
+			run clears the previous DOM and gives the browser an idle period before measurement. The primary result is the
+			median DOM insertion plus forced style and layout. Frame latency remains tied to the display refresh cycle, so its
+			median and full range are reported separately. It complements rather than replaces the cold-load benchmark. Vue
+			scenarios are omitted because mounting a client app would measure a different operation.
+		</p>
+
+		<!-- Runtime output -->
+		<ul class="icons-grid runtime-test__output" id="runtime-output" aria-label="Rendered SVG icons"></ul>
+	</section>
+
+	<!-- Runtime scenario catalog -->
+	<script is:inline id="runtime-catalog" type="application/json" set:html={serializedCatalog}></script>
+
+	<script>
+		/**
+		 * Describes one browser-native method available to the runtime test.
+		 */
+		type RuntimeScenario = {
+			/** Stable scenario identifier used by the selector and URL. */
+			id: string;
+
+			/** Human-readable method label. */
+			label: string;
+
+			/** Renderer identifier exposed on the output for method-specific styling. */
+			renderer: string;
+
+			/** One complete list-item template per source icon. */
+			items: string[];
+
+			/** External resources warmed before measurement begins. */
+			preloadSources: string[];
+		};
+
+		/**
+		 * Timings collected from one complete DOM replacement.
+		 */
+		type RuntimeMeasurement = {
+			/** Synchronous DOM insertion, style calculation and layout duration. */
+			domAndLayoutDuration: number;
+
+			/** Time from DOM insertion start until the next animation frame. */
+			frameDuration: number;
+		};
+
+		const catalogElement = document.querySelector('#runtime-catalog');
+		const form = document.querySelector('#runtime-form');
+		const methodSelect = document.querySelector('#runtime-method');
+		const iconCountInput = document.querySelector('#runtime-icon-count');
+		const runCountInput = document.querySelector('#runtime-run-count');
+		const runButton = document.querySelector('#runtime-run');
+		const output = document.querySelector('#runtime-output');
+		const domTimeOutput = document.querySelector('#runtime-dom-time');
+		const perIconTimeOutput = document.querySelector('#runtime-per-icon-time');
+		const frameTimeOutput = document.querySelector('#runtime-frame-time');
+		const frameRangeOutput = document.querySelector('#runtime-frame-range');
+		const lastRunOutput = document.querySelector('#runtime-last-run');
+		const statusOutput = document.querySelector('#runtime-status');
+
+		if (
+			!(catalogElement instanceof HTMLScriptElement)
+			|| !(form instanceof HTMLFormElement)
+			|| !(methodSelect instanceof HTMLSelectElement)
+			|| !(iconCountInput instanceof HTMLInputElement)
+			|| !(runCountInput instanceof HTMLInputElement)
+			|| !(runButton instanceof HTMLButtonElement)
+			|| !(output instanceof HTMLUListElement)
+			|| !domTimeOutput
+			|| !perIconTimeOutput
+			|| !frameTimeOutput
+			|| !frameRangeOutput
+			|| !lastRunOutput
+			|| !statusOutput
+		) {
+			throw new Error('Runtime test controls are incomplete.');
+		}
+
+		const runtimeScenarios = JSON.parse(catalogElement.textContent ?? '[]') as RuntimeScenario[];
+		const scenariosById = new Map(runtimeScenarios.map((scenario) => [scenario.id, scenario]));
+		const preloadRequests = new Map<string, Promise<void>>();
+		const timeFormatter = new Intl.NumberFormat('en', { maximumFractionDigits: 2 });
+		const countFormatter = new Intl.NumberFormat('en');
+
+		const formatTime = (time: number): string => `${timeFormatter.format(time)} ms`;
+		const formatRange = (values: number[]): string => {
+			return `${formatTime(Math.min(...values))}–${formatTime(Math.max(...values))}`;
+		};
+		const getMedian = (values: number[]): number => {
+			const sortedValues = values.toSorted((firstValue, secondValue) => firstValue - secondValue);
+			const middleIndex = Math.floor(sortedValues.length / 2);
+
+			return sortedValues.length % 2 === 0
+				? (sortedValues[middleIndex - 1]! + sortedValues[middleIndex]!) / 2
+				: sortedValues[middleIndex]!;
+		};
+		const waitForAnimationFrame = (): Promise<void> => {
+			return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+		};
+		const waitForIdle = (): Promise<void> => {
+			return new Promise((resolve) => {
+				if (typeof window.requestIdleCallback === 'function') {
+					window.requestIdleCallback(() => resolve(), { timeout: 250 });
+					return;
+				}
+
+				window.setTimeout(resolve, 50);
+			});
+		};
+		const measureMarkup = async (markup: string): Promise<RuntimeMeasurement> => {
+			output.replaceChildren();
+			await waitForAnimationFrame();
+			await waitForIdle();
+			await waitForAnimationFrame();
+
+			const startTime = performance.now();
+			output.innerHTML = markup;
+			output.getBoundingClientRect();
+			const domAndLayoutDuration = performance.now() - startTime;
+
+			await waitForAnimationFrame();
+
+			return {
+				domAndLayoutDuration,
+				frameDuration: performance.now() - startTime,
+			};
+		};
+
+		const preloadSource = (source: string): Promise<void> => {
+			const existingRequest = preloadRequests.get(source);
+
+			if (existingRequest) return existingRequest;
+
+			const request = fetch(source, { cache: 'force-cache' }).then(async (response) => {
+				if (!response.ok) throw new Error(`Unable to preload ${source}: ${response.status}`);
+
+				await response.arrayBuffer();
+			});
+
+			preloadRequests.set(source, request);
+
+			return request;
+		};
+
+		const searchParameters = new URLSearchParams(window.location.search);
+		const initialMethod = searchParameters.get('method');
+		const initialCount = Number(searchParameters.get('count'));
+		const initialRunCount = Number(searchParameters.get('runs'));
+
+		if (initialMethod && scenariosById.has(initialMethod)) methodSelect.value = initialMethod;
+		if (Number.isInteger(initialCount) && initialCount > 0 && initialCount <= 50_000) {
+			iconCountInput.value = initialCount.toString();
+		}
+		if (
+			Number.isInteger(initialRunCount)
+			&& initialRunCount >= 3
+			&& initialRunCount <= 15
+			&& initialRunCount % 2 === 1
+		) {
+			runCountInput.value = initialRunCount.toString();
+		}
+
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+
+			const scenario = scenariosById.get(methodSelect.value);
+			const iconCount = iconCountInput.valueAsNumber;
+			const runCount = runCountInput.valueAsNumber;
+
+			if (
+				!scenario
+				|| !iconCountInput.checkValidity()
+				|| !runCountInput.checkValidity()
+				|| !Number.isInteger(iconCount)
+				|| !Number.isInteger(runCount)
+			) {
+				form.reportValidity();
+				return;
+			}
+
+			runButton.disabled = true;
+			output.setAttribute('aria-busy', 'true');
+			output.replaceChildren();
+			domTimeOutput.textContent = '–';
+			perIconTimeOutput.textContent = '–';
+			frameTimeOutput.textContent = '–';
+			frameRangeOutput.textContent = '–';
+			statusOutput.textContent = 'Preparing icon sources…';
+
+			try {
+				await Promise.all(scenario.preloadSources.map((source) => preloadSource(source)));
+
+				const items = Array.from({ length: iconCount }, (_, index) => {
+					return scenario.items[index % scenario.items.length]!;
+				});
+				const markup = items.join('');
+				const measurements: RuntimeMeasurement[] = [];
+
+				output.dataset.renderer = scenario.renderer;
+				statusOutput.textContent = `Warming up ${countFormatter.format(iconCount)} icons…`;
+				await measureMarkup(markup);
+
+				for (let runIndex = 0; runIndex < runCount; runIndex += 1) {
+					statusOutput.textContent = `Measured run ${runIndex + 1} of ${runCount}…`;
+					measurements.push(await measureMarkup(markup));
+				}
+
+				const domDurations = measurements.map((measurement) => measurement.domAndLayoutDuration);
+				const frameDurations = measurements.map((measurement) => measurement.frameDuration);
+				const domMedian = getMedian(domDurations);
+				const frameMedian = getMedian(frameDurations);
+
+				domTimeOutput.textContent = formatTime(domMedian);
+				perIconTimeOutput.textContent = formatTime(domMedian / iconCount);
+				frameTimeOutput.textContent = formatTime(frameMedian);
+				frameRangeOutput.textContent = formatRange(frameDurations);
+				lastRunOutput.textContent = new Date().toLocaleTimeString();
+				statusOutput.textContent = [
+					`${runCount} measured runs after one warm-up with ${scenario.label}.`,
+					`DOM + layout range: ${formatRange(domDurations)}.`,
+				].join(' ');
+
+				const url = new URL(window.location.href);
+				url.searchParams.set('method', scenario.id);
+				url.searchParams.set('count', iconCount.toString());
+				url.searchParams.set('runs', runCount.toString());
+				window.history.replaceState(null, '', url);
+			} catch (error) {
+				statusOutput.textContent = error instanceof Error ? error.message : 'The runtime test failed.';
+			} finally {
+				output.removeAttribute('aria-busy');
+				runButton.disabled = false;
+			}
+		});
+	</script>
+</LayoutDefault>
