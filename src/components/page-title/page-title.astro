@@ -1,0 +1,34 @@
+---
+import { useBem, withBasePath } from '#utils';
+
+import './page-title.scss';
+
+interface Props {
+	title: string;
+
+	/**
+	 * Absolute path of the matching bare benchmark page.
+	 */
+	barePagePath?: string;
+
+	reportPath?: string;
+}
+
+const $b = useBem('page-title');
+---
+
+<div class={$b(null)}>
+	<h1 class={$b('title')}>{Astro.props.title}</h1>
+
+	<!-- Bare benchmark page -->
+	{
+		Astro.props.barePagePath
+		&& <a class={$b('link')} href={withBasePath(Astro.props.barePagePath)}>View bare benchmark page</a>
+	}
+
+	<!-- Lighthouse report -->
+	{
+		Astro.props.reportPath
+		&& <a class={$b('link')} href={withBasePath(Astro.props.reportPath)}>View Lighthouse report</a>
+	}
+</div>

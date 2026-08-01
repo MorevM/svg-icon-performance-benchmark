@@ -1,0 +1,7 @@
+.icons-grid {
+	$b: #{&};
+
+	display: block grid;
+	grid-template-columns: repeat(auto-fit, minmax(24px, 1fr));
+	gap: var(--layout-gutter);
+}

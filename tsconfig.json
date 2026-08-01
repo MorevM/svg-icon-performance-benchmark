@@ -1,0 +1,20 @@
+{
+	"extends": "astro/tsconfigs/strictest",
+	"include": [".astro/types.d.ts", "**/*.*"],
+	"exclude": ["dist"],
+	"compilerOptions": {
+		"allowJs": true,
+		"types": ["node"],
+		"paths": {
+			"~public/*": ["./.cache/public/*"],
+			"~assets/*": ["./src/assets/*"],
+			"~benchmark/*": ["./src/benchmark/*"],
+			"~layouts/*": ["./src/layouts/*"],
+			"~components/*": ["./src/components/*"],
+			"~showcase/*": ["./src/showcase/*"],
+			"#utils": ["./src/utils/index.ts"],
+			"#constants": ["./src/constants.ts"],
+		},
+		"jsx": "preserve",
+	},
+}

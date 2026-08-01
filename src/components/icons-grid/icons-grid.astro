@@ -1,0 +1,23 @@
+---
+import { useBem } from '#utils';
+import './icons-grid.scss';
+
+interface Props {
+	items: string[];
+}
+
+const $props = Astro.props;
+
+const $b = useBem('icons-grid');
+
+---
+
+<ul class={$b(null)}>
+	{
+		$props.items.map((item) => (
+			<li class={$b('item')}>
+				<Fragment set:html={item} />
+			</li>
+		))
+	}
+</ul>

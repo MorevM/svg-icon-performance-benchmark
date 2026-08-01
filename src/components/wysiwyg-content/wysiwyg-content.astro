@@ -1,0 +1,15 @@
+---
+import { useBem } from '#utils';
+
+import './wysiwyg-content.scss';
+
+interface Props {
+	className?: string;
+}
+
+const $b = useBem('wysiwyg-content');
+---
+
+<article class={$b(null, Astro.props.className)}>
+	<slot></slot>
+</article>

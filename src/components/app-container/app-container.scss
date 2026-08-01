@@ -1,0 +1,7 @@
+.app-container {
+	$b: #{&};
+
+	max-inline-size: 1266px;
+	margin-inline: auto;
+	padding-inline: var(--layout-margin);
+}

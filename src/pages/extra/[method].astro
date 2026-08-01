@@ -1,0 +1,78 @@
+---
+import { fetchAllSvg, withBasePath } from '#utils';
+import { createBenchmarkIconSequence } from '~benchmark/icon-sequence';
+import IconsGrid from '~components/icons-grid/icons-grid.astro';
+import PageTitle from '~components/page-title/page-title.astro';
+import LayoutDefault from '~layouts/layout-default/layout-default.astro';
+import {
+	EXTRA_SHOWCASE_ICON_COUNT,
+	extraShowcaseScenarios,
+} from '~showcase/extra-scenarios';
+import type {
+	ExtraShowcaseRenderer,
+	ExtraShowcaseScenario,
+} from '~showcase/extra-scenarios';
+
+// eslint-disable-next-line import-x/exports-last -- Astro requires getStaticPaths to be exported from page frontmatter.
+export const getStaticPaths = () => {
+	return extraShowcaseScenarios.map((scenario) => {
+		return {
+			params: { method: scenario.code },
+			props: { scenario },
+		};
+	});
+};
+
+/**
+ * Props passed to one showcase-only page.
+ */
+interface Props {
+	/**
+	 * Catalog entry represented by the page.
+	 */
+	scenario: ExtraShowcaseScenario;
+}
+
+const createItemsMarkup = (renderer: ExtraShowcaseRenderer, iconNames: string[]): string[] => {
+	return iconNames.map((iconName) => {
+		const source = withBasePath(`/svg/${iconName}.svg`);
+		const label = `${iconName} SVG icon`;
+
+		switch (renderer) {
+			case 'embed':
+				return `<embed class="extra-embedded-icon" src="${source}" type="image/svg+xml" width="24" height="24" aria-label="${label}" />`;
+
+			case 'object':
+				return `<object class="extra-embedded-icon" data="${source}" type="image/svg+xml" width="24" height="24" aria-label="${label}"></object>`;
+
+			case 'iframe':
+				return `<iframe class="extra-embedded-icon" src="${source}" width="24" height="24" title="${label}"></iframe>`;
+
+			default:
+				throw new Error(`Unsupported extra showcase renderer: ${renderer}`);
+		}
+	});
+};
+
+const { scenario } = Astro.props;
+const icons = fetchAllSvg();
+const iconNames = createBenchmarkIconSequence(icons, EXTRA_SHOWCASE_ICON_COUNT);
+const itemsMarkup = createItemsMarkup(scenario.renderer, iconNames);
+const title = `${scenario.title} - ${EXTRA_SHOWCASE_ICON_COUNT} items`;
+---
+
+<LayoutDefault lang="en" title={title}>
+	<!-- Scenario styles -->
+	<style slot="head">
+		:global(.extra-embedded-icon) {
+			display: block;
+			border: 0;
+		}
+	</style>
+
+	<!-- Page heading -->
+	<PageTitle title={title} slot="title" />
+
+	<!-- Icons grid -->
+	<IconsGrid items={itemsMarkup} />
+</LayoutDefault>

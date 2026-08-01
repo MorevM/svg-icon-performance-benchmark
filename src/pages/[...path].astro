@@ -1,0 +1,94 @@
+---
+import { createBenchmarkPages } from '~benchmark/create-scenario-pages';
+import { BENCHMARK_ICON_COUNT, getScenarioBarePagePath } from '~benchmark/scenarios';
+import BenchmarkScenarioContent from '~components/benchmark-scenario-content/benchmark-scenario-content.astro';
+import PageTitle from '~components/page-title/page-title.astro';
+import LayoutBare from '~layouts/layout-bare/layout-bare.astro';
+import LayoutDefault from '~layouts/layout-default/layout-default.astro';
+import type { BenchmarkPageProps } from '~benchmark/create-scenario-pages';
+
+// eslint-disable-next-line import-x/exports-last -- Astro requires getStaticPaths to be exported from page frontmatter.
+export const getStaticPaths = () => createBenchmarkPages();
+
+type Props = BenchmarkPageProps;
+
+const { scenario, itemsMarkup, iconNames, styles, extraContent, kind } = Astro.props;
+const title = `${scenario.title} - ${iconNames.length} items`;
+const reportPath = kind === 'showcase' && iconNames.length === BENCHMARK_ICON_COUNT
+	? scenario.reportPath
+	: undefined;
+const barePagePath = kind === 'showcase'
+	? getScenarioBarePagePath(scenario, iconNames.length)
+	: undefined;
+const scenarioContentProps = {
+	scenario,
+	itemsMarkup,
+	iconNames,
+	...(extraContent !== undefined && { extraContent }),
+};
+---
+
+{
+	kind === 'showcase'
+		? (
+			<LayoutDefault lang="en" title={title}>
+				<!-- Scenario styles -->
+				{ styles && <style is:inline set:html={styles} slot="head"></style> }
+
+				<!-- Page heading -->
+				<PageTitle
+					title={title}
+					{...(barePagePath === undefined ? {} : { barePagePath })}
+					{...(reportPath === undefined ? {} : { reportPath })}
+					slot="title"
+				/>
+
+				<!-- Scenario content -->
+				<BenchmarkScenarioContent {...scenarioContentProps} />
+			</LayoutDefault>
+		)
+		: (
+			<LayoutBare
+				lang="en"
+				{...(kind === 'bare' ? { lcpHeading: 'Largest contentful paint' } : {})}
+				title="SVG embedding benchmark"
+			>
+				<!-- Scenario styles -->
+				{ styles && <style is:inline set:html={styles} slot="head"></style> }
+
+				{
+					kind === 'controlled'
+						? (
+							<>
+								<!-- Controlled benchmark payload -->
+								<template id="benchmark-payload">
+									<BenchmarkScenarioContent {...scenarioContentProps} />
+								</template>
+
+								<!-- Controlled benchmark target -->
+								<main id="benchmark-target"></main>
+
+								<script is:inline>
+									requestAnimationFrame(() => {
+										requestAnimationFrame(() => {
+											const payload = document.querySelector('#benchmark-payload');
+											const target = document.querySelector('#benchmark-target');
+
+											if (!(payload instanceof HTMLTemplateElement) || !target) return;
+
+											window.__benchmarkRenderStart = performance.now();
+											target.replaceChildren(payload.content);
+										});
+									});
+								</script>
+							</>
+						)
+						: (
+							<main id="benchmark-target">
+								<BenchmarkScenarioContent {...scenarioContentProps} />
+							</main>
+						)
+				}
+			</LayoutBare>
+		)
+}

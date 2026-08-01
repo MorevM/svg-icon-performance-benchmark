@@ -1,0 +1,64 @@
+---
+import '@morev/css/reset.css';
+import '@morev/css/reset/reduced-motion.css';
+import '~assets/styles/variables.scss';
+
+/**
+ * Props passed to the bare benchmark document shell.
+ */
+interface Props {
+	/**
+	 * Browser document title.
+	 */
+	title: string;
+
+	/**
+	 * Stable heading used as the Lighthouse LCP candidate.
+	 */
+	lcpHeading?: string;
+
+	/**
+	 * Document language.
+	 */
+	lang: 'en' | 'ru';
+}
+
+const { title, lcpHeading, lang } = Astro.props;
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{ title }</title>
+
+		<!-- Page-specific head -->
+		<slot name="head" />
+	</head>
+
+	<body>
+		{
+			lcpHeading
+			&& (
+				<>
+					<!-- Lighthouse LCP candidate -->
+					<h1 class="lcp-heading">{ lcpHeading }</h1>
+				</>
+			)
+		}
+
+		<!-- Benchmark content -->
+		<slot />
+	</body>
+</html>
+
+<style>
+	.lcp-heading {
+		font-size: clamp(32px, 7vw, 64px);
+		font-weight: 700;
+		line-height: 1;
+		margin-block-end: 24px;
+	}
+</style>

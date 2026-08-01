@@ -1,0 +1,27 @@
+---
+import IconsGrid from '~components/icons-grid/icons-grid.astro';
+import VueInlineIconsGrid from '~components/vue-inline-icons-grid/vue-inline-icons-grid.vue';
+import VueInlinedSymbolIconsGrid from '~components/vue-inlined-symbol-icons-grid/vue-inlined-symbol-icons-grid.vue';
+import type { BenchmarkScenario } from '~benchmark/scenarios';
+
+interface Props {
+	scenario: BenchmarkScenario;
+	itemsMarkup: string[];
+	iconNames: string[];
+	extraContent?: string;
+}
+
+const { scenario, itemsMarkup, iconNames, extraContent } = Astro.props;
+---
+
+<!-- Inlined sprite -->
+{ extraContent && <Fragment set:html={extraContent} /> }
+
+<!-- Icons grid -->
+{
+	scenario.renderer === 'vue-inline-svg-components'
+		? <VueInlineIconsGrid items={iconNames} client:load />
+		: scenario.renderer === 'vue-inlined-symbol-sprite'
+			? <VueInlinedSymbolIconsGrid items={iconNames} client:load />
+			: <IconsGrid items={itemsMarkup} />
+}

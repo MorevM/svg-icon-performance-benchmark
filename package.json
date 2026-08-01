@@ -1,0 +1,60 @@
+{
+	"name": "svg-icon-performance-benchmark",
+	"description": "A stress test comparing different ways to embed SVG on a page",
+	"type": "module",
+	"version": "0.0.1",
+	"packageManager": "pnpm@11.17.0",
+	"engines": {
+		"node": ">=24",
+		"pnpm": ">=11"
+	},
+	"license": "MIT",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"astro": "astro",
+		"benchmark": "tsx --input-type=module -e \"await import('./metrics/generate-reports.ts')\"",
+		"benchmark:reaggregate": "tsx --input-type=module -e \"process.argv.push('--reaggregate'); await import('./metrics/generate-reports.ts')\"",
+		"benchmark:smoke": "tsx --input-type=module -e \"process.argv.push('--smoke'); await import('./metrics/generate-reports.ts')\"",
+		"lint": "pnpm lint:eslint && pnpm lint:stylelint",
+		"lint:fix": "pnpm lint:eslint:fix && pnpm lint:stylelint:fix",
+		"lint:stylelint": "stylelint \"**/*.{css,scss}\" --allow-empty-input --ignore-path .gitignore",
+		"lint:stylelint:fix": "stylelint \"**/*.{css,scss}\" --fix --allow-empty-input --ignore-path .gitignore",
+		"lint:eslint": "eslint .",
+		"lint:eslint:fix": "eslint . --fix",
+		"prepare": "lefthook install",
+		"test:metrics": "node --import tsx --test metrics/*.test.ts",
+		"typecheck": "astro check"
+	},
+	"dependencies": {
+		"@astrojs/vue": "^7.0.1",
+		"@morev/css": "^0.0.0",
+		"astro": "^7.1.4"
+	},
+	"devDependencies": {
+		"@astrojs/check": "^0.9.10",
+		"@fastify/compress": "^9.1.0",
+		"@fastify/static": "^10.1.2",
+		"@morev/bem-classnames": "^1.1.2",
+		"@morev/eslint-config": "^42.0.2",
+		"@morev/stylelint-config": "^9.0.2",
+		"@morev/utils": "^3.15.0",
+		"@puppeteer/browsers": "3.0.6",
+		"@types/node": "^22.10.5",
+		"eslint": "^10.8.0",
+		"fastify": "^5.10.0",
+		"lefthook": "^2.1.10",
+		"lighthouse": "13.4.1",
+		"postcss": "^8.5.23",
+		"puppeteer-core": "25.4.0",
+		"sass": "^1.102.0",
+		"stylelint": "^17.14.1",
+		"svgo": "4.0.2",
+		"tsx": "^4.23.1",
+		"typescript": "^6.0.2",
+		"vite-svg-loader": "^5.1.1",
+		"vue": "^3.5.40",
+		"yauzl": "3.4.0"
+	}
+}

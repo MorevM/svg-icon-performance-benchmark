@@ -1,0 +1,207 @@
+---
+import { useBem, withBasePath } from '#utils';
+import {
+	benchmarkScenarioGroups,
+	getScenarioPagePath,
+	SHOWCASE_ICON_COUNTS,
+} from '~benchmark/scenarios';
+import { extraShowcaseScenarios } from '~showcase/extra-scenarios';
+import HeaderNavItem from './header-nav-item.astro';
+
+import './header-nav.scss';
+
+const $b = useBem('header-nav');
+const navId = 'showcase-navigation';
+
+const data = benchmarkScenarioGroups.map((group) => {
+	return {
+		text: group.name,
+		items: [
+			...group.scenarios.map((scenario) => {
+				return {
+					text: scenario.name,
+					items: SHOWCASE_ICON_COUNTS.map((iconCount) => {
+						return {
+							text: `${iconCount} items`,
+							link: withBasePath(getScenarioPagePath(scenario, iconCount)),
+						};
+					}),
+				};
+			}),
+			...(group.matrix === 'bonus'
+				? extraShowcaseScenarios.map((scenario) => {
+					return {
+						text: scenario.name,
+						link: withBasePath(scenario.pagePath),
+					};
+				})
+				: []),
+		],
+	};
+});
+---
+
+<div class={$b(null)}>
+	<!-- Mobile trigger -->
+	<button
+		class={$b('sandwich')}
+		data-nav-trigger
+		type="button"
+		aria-controls={navId}
+		aria-expanded="false"
+		aria-label="Open navigation"
+	>
+		<span class={$b('sandwich-line', { l: 1 })}></span>
+		<span class={$b('sandwich-line', { l: 2 })}></span>
+		<span class={$b('sandwich-line', { l: 3 })}></span>
+	</button>
+
+	<!-- Actual nav -->
+	<nav id={navId} class={$b('nav')} aria-label="SVG use cases" data-nav>
+		<ul class={$b('list')}>
+			{
+				data.map((item, index) => (
+					<HeaderNavItem
+						bemBlockName="header-nav"
+						depth={1}
+						itemPath={(index + 1).toString()}
+						{...item}
+					/>
+				))
+			}
+		</ul>
+	</nav>
+</div>
+
+<script>
+	(() => {
+		const trigger = document.querySelector<HTMLButtonElement>('[data-nav-trigger]');
+		const nav = document.querySelector<HTMLElement>('[data-nav]');
+
+		if (!trigger || !nav) return;
+
+		const html = document.documentElement;
+		const main = document.querySelector<HTMLElement>('main');
+		const mobileMedia = window.matchMedia('(width < 1120px)');
+		const disclosures = [...nav.querySelectorAll<HTMLButtonElement>('[data-nav-disclosure]')];
+		let isMenuOpen = false;
+
+		const setDisclosureState = (button: HTMLButtonElement, isExpanded: boolean) => {
+			const submenuId = button.getAttribute('aria-controls');
+			const submenu = submenuId ? document.querySelector<HTMLElement>(`#${submenuId}`) : null;
+
+			if (!submenu) return;
+
+			button.setAttribute('aria-expanded', `${isExpanded}`);
+			button.classList.toggle('is-expanded', isExpanded);
+			submenu.classList.toggle('is-expanded', isExpanded);
+		};
+
+		const closeDisclosures = () => {
+			disclosures.forEach((button) => setDisclosureState(button, false));
+		};
+
+		const expandCurrentPath = () => {
+			const currentLink = nav.querySelector('[aria-current="page"]');
+
+			if (!currentLink) return;
+
+			let submenu = currentLink.closest<HTMLElement>('[data-nav-submenu]');
+
+			while (submenu) {
+				const button = nav.querySelector<HTMLButtonElement>(`[aria-controls="${submenu.id}"]`);
+
+				if (button) setDisclosureState(button, true);
+				submenu = submenu.parentElement?.closest<HTMLElement>('[data-nav-submenu]') ?? null;
+			}
+		};
+
+		const setMenuState = (isOpen: boolean) => {
+			isMenuOpen = isOpen;
+			trigger.setAttribute('aria-expanded', `${isOpen}`);
+			trigger.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+			trigger.classList.toggle('is-active', isOpen);
+			nav.classList.toggle('is-active', isOpen);
+			nav.toggleAttribute('inert', mobileMedia.matches && !isOpen);
+			main?.toggleAttribute('inert', mobileMedia.matches && isOpen);
+			html.classList.toggle('no-scroll', mobileMedia.matches && isOpen);
+		};
+
+		trigger.addEventListener('click', () => {
+			setMenuState(!isMenuOpen);
+		});
+
+		disclosures.forEach((button) => {
+			const item = button.closest('li');
+
+			button.addEventListener('click', () => {
+				const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+				setDisclosureState(button, !isExpanded);
+			});
+
+			item?.addEventListener('pointerenter', () => {
+				if (!mobileMedia.matches) setDisclosureState(button, true);
+			});
+
+			item?.addEventListener('pointerleave', () => {
+				if (!mobileMedia.matches && !item.contains(document.activeElement)) {
+					setDisclosureState(button, false);
+				}
+			});
+		});
+
+		nav.addEventListener('click', (event) => {
+			if (mobileMedia.matches && (event.target as Element).closest('a')) {
+				setMenuState(false);
+			}
+		});
+
+		nav.addEventListener('focusout', () => {
+			window.setTimeout(() => {
+				if (!mobileMedia.matches && !nav.contains(document.activeElement)) closeDisclosures();
+			});
+		});
+
+		document.addEventListener('click', (event) => {
+			const target = event.target as Node;
+
+			if (!mobileMedia.matches && !nav.contains(target) && !trigger.contains(target)) {
+				closeDisclosures();
+			}
+		});
+
+		document.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape') return;
+
+			const activeElement = document.activeElement as HTMLElement | null;
+			const expandedButton = activeElement?.closest<HTMLButtonElement>('[data-nav-disclosure][aria-expanded="true"]');
+			const containingSubmenu = activeElement?.closest<HTMLElement>('[data-nav-submenu]');
+			const parentButton = containingSubmenu
+				? nav.querySelector<HTMLButtonElement>(`[aria-controls="${containingSubmenu.id}"]`)
+				: null;
+			const disclosure = expandedButton ?? parentButton;
+
+			if (disclosure?.getAttribute('aria-expanded') === 'true') {
+				setDisclosureState(disclosure, false);
+				disclosure.focus();
+				return;
+			}
+
+			if (mobileMedia.matches && isMenuOpen) {
+				setMenuState(false);
+				trigger.focus();
+			}
+		});
+
+		const syncViewportState = () => {
+			closeDisclosures();
+			setMenuState(false);
+
+			if (mobileMedia.matches) expandCurrentPath();
+		};
+
+		mobileMedia.addEventListener('change', syncViewportState);
+		syncViewportState();
+	})();
+</script>

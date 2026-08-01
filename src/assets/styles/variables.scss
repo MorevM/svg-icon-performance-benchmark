@@ -1,0 +1,44 @@
+/* stylelint-disable no-duplicate-selectors -- Separate :root blocks group variables by domain. */
+:root {
+	--header-height: 56px;
+}
+
+:root {
+	--layout-margin: 8px;
+	--layout-gutter: 8px;
+
+	@media (width >= 360px) {
+		--layout-margin: 12px;
+		--layout-gutter: 12px;
+	}
+
+	@media (width >= 600px) {
+		--layout-margin: 24px;
+		--layout-gutter: 16px;
+	}
+
+	@media (width >= 768px) {
+		--layout-margin: 40px;
+	}
+
+	@media (width >= 1024px) {
+		--layout-margin: 56px;
+	}
+}
+
+:root {
+	--app--background-color: #ffffff;
+	--app--border-color: #f4f4f4;
+	--app--box-shadow: 0 1px 2px rgb(0 0 0 / .1);
+	--text-secondary-color: #555555;
+
+	// q
+	--color-text: #111111;
+	--color-primary-light: #2049ff;
+	--color-primary: #2200ff;
+	--color-primary-dark: #130091;
+}
+
+:root {
+	--transition-primary: .2s;
+}

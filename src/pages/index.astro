@@ -1,0 +1,590 @@
+---
+import { withBasePath } from '#utils';
+import { readBenchmarkSummary } from '~benchmark/read-summary';
+import {
+	BENCHMARK_ICON_COUNT,
+	benchmarkScenarios,
+} from '~benchmark/scenarios';
+import {
+	bonusMetricColumns,
+	bonusOverallDomains,
+	createScenarioPresentations,
+	formatMeasurementDeviations,
+	formatMetricRange,
+	formatMetricValue,
+	getComparisonColor,
+	mainMetricColumns,
+	mainOverallDomains,
+} from '~benchmark/summary-presentation';
+import BenchmarkMetricRange from '~components/benchmark-metric-range/benchmark-metric-range.astro';
+import LayoutDefault from '~layouts/layout-default/layout-default.astro';
+import type { BenchmarkScenarioSummary } from '~benchmark/report-contracts';
+import type { BenchmarkMetricColumn } from '~benchmark/summary-presentation';
+
+import './benchmark-results.scss';
+
+const summary = readBenchmarkSummary();
+const benchmarkIconCount = BENCHMARK_ICON_COUNT.toLocaleString('en-US');
+const generatedAt = summary
+	? new Intl.DateTimeFormat('en', {
+		dateStyle: 'medium',
+		timeStyle: 'short',
+	}).format(new Date(summary.generatedAt))
+	: null;
+const scenarioMenuOrder = new Map(benchmarkScenarios.map((scenario, index) => [scenario.id, index]));
+const scenariosInMenuOrder = summary?.scenarios.toSorted((first, second) => {
+	return (scenarioMenuOrder.get(first.id) ?? Number.MAX_SAFE_INTEGER)
+		- (scenarioMenuOrder.get(second.id) ?? Number.MAX_SAFE_INTEGER);
+}) ?? [];
+const mainScenarios = scenariosInMenuOrder.filter((scenario) => scenario.matrix === 'main');
+const bonusScenarios = scenariosInMenuOrder.filter((scenario) => scenario.matrix === 'bonus');
+const mainRows = createScenarioPresentations(mainScenarios, mainMetricColumns, mainOverallDomains);
+const bonusRows = createScenarioPresentations(bonusScenarios, bonusMetricColumns, bonusOverallDomains);
+const comparisonNames = new Map(benchmarkScenarios.map((scenario) => {
+	return [scenario.id, scenario.comparisonName];
+}));
+const scenarioSummaries = new Map(summary?.scenarios.map((scenario) => [scenario.id, scenario]));
+const bonusReferenceScenarioIds = new Map([
+	['vue-inline-svg-components', 'inline-as-html'],
+	['vue-inlined-symbol-sprite', 'sprite-inlined'],
+]);
+
+const getMethodName = (scenario: BenchmarkScenarioSummary): string => {
+	return `${scenario.groupName} — ${scenario.name}`;
+};
+
+const getComparisonName = (scenario: BenchmarkScenarioSummary): string => {
+	return comparisonNames.get(scenario.id) ?? getMethodName(scenario);
+};
+
+const getBonusReferenceScenario = (scenario: BenchmarkScenarioSummary): BenchmarkScenarioSummary | undefined => {
+	const referenceScenarioId = bonusReferenceScenarioIds.get(scenario.id);
+
+	return referenceScenarioId ? scenarioSummaries.get(referenceScenarioId) : undefined;
+};
+
+const getCellLabel = (
+	scenario: BenchmarkScenarioSummary,
+	column: BenchmarkMetricColumn,
+): string => {
+	const metric = scenario.metrics[column.name];
+
+	if (!metric) return `${getMethodName(scenario)}, ${column.title}: unavailable`;
+
+	const metricRange = formatMetricRange(metric, column.unit);
+
+	return [
+		getMethodName(scenario),
+		`${column.title}: ${formatMetricValue(metric.median, column.unit)}`,
+		...(metricRange ? [`measured range ${metricRange}`] : []),
+		`measurement deviations ${formatMeasurementDeviations(scenario, column)}`,
+	].join(', ');
+};
+---
+
+<LayoutDefault title="SVG icon performance benchmark" lang="en">
+	<!-- Benchmark summary -->
+	<section class="benchmark-results__intro">
+		<p class="benchmark-results__eyebrow">SVG icon performance benchmark</p>
+		<h1 class="benchmark-results__title">What is the optimal way to embed SVG?</h1>
+		<p class="benchmark-results__lead">
+			A reproducible Lighthouse stress test comparing equivalent pages, icon sequences and mobile CPU throttling.
+			The values are medians; smaller values are better except for Performance Score.
+		</p>
+
+		{ summary
+			? (
+				<dl class="benchmark-results__facts">
+					<div class="benchmark-results__fact">
+						<dt>Generated</dt>
+						<dd>{ generatedAt }</dd>
+					</div>
+					<div class="benchmark-results__fact">
+						<dt>Sample</dt>
+						<dd>{ summary.iconCount.toLocaleString('en-US') } icons × { summary.runCount } base runs</dd>
+					</div>
+					<div class="benchmark-results__fact">
+						<dt>Lighthouse</dt>
+						<dd>{ summary.environment.lighthouseVersion }</dd>
+					</div>
+					<div class="benchmark-results__fact">
+						<dt>Chromium</dt>
+						<dd>{ summary.environment.chromiumVersion }</dd>
+					</div>
+					<div class="benchmark-results__fact">
+						<dt>CPU slowdown</dt>
+						<dd>×{ summary.environment.cpuSlowdownMultiplier }</dd>
+					</div>
+				</dl>
+			)
+			: (
+				<p class="benchmark-results__empty">
+					No complete benchmark series has been generated yet. Run <code>pnpm benchmark</code> to publish the results.
+				</p>
+			) }
+	</section>
+
+	{ summary && (
+		<>
+			<!-- Comparison scale -->
+			<div class="benchmark-results__legend" aria-label="Cell color scale">
+				<span class="benchmark-results__legend-label">Relative to the best result</span>
+				<ol class="benchmark-results__scale">
+					{ [1, 1.5, 2, 3, 4].map((factor) => (
+						<li
+							class="benchmark-results__scale-item"
+							style={{ '--comparison-color': getComparisonColor(factor) }}
+						>
+							×{ factor }
+						</li>
+					)) }
+				</ol>
+			</div>
+
+			<!-- Main comparison -->
+			<section class="benchmark-results__section" aria-labelledby="main-results-title">
+				<div class="benchmark-results__section-heading">
+					<div>
+						<p class="benchmark-results__eyebrow">Primary matrix</p>
+						<h2 class="benchmark-results__section-title" id="main-results-title">
+							Browser-native methods
+						</h2>
+					</div>
+					<p class="benchmark-results__section-copy">
+						Rows follow the showcase menu by default. Use any column heading to sort this table. Each color is
+						calculated against the best median in the table; the smaller second line is the retained
+						minimum–maximum range.
+					</p>
+				</div>
+
+				<section
+					aria-label="Scrollable browser-native results"
+					class="benchmark-results__table-scroller"
+				>
+					<table class="benchmark-results__table" data-sortable-table>
+						<caption>Performance comparison of browser-native SVG embedding methods</caption>
+						<thead>
+							<tr>
+								<th class="benchmark-results__method-heading" scope="col" aria-sort="ascending">
+									<button
+										class="benchmark-results__sort-button"
+										data-sort-button
+										data-sort-direction="ascending"
+										type="button"
+									>
+										Method
+									</button>
+								</th>
+								<th scope="col">
+									<button
+										class="benchmark-results__sort-button"
+										data-sort-button
+										data-sort-direction="ascending"
+										type="button"
+									>
+										Overall
+									</button>
+								</th>
+								{ mainMetricColumns.map((column) => (
+									<th scope="col">
+										<button
+											class="benchmark-results__sort-button"
+											data-sort-button
+											data-sort-direction={column.direction === 'higher' ? 'descending' : 'ascending'}
+											type="button"
+										>
+											<abbr title={column.title}>{ column.label }</abbr>
+										</button>
+									</th>
+								)) }
+							</tr>
+						</thead>
+						<tbody data-sort-body>
+							{ mainRows.map((scenario, rowIndex) => (
+								<tr data-sort-id={scenario.id} data-sort-row data-default-order={rowIndex}>
+									<th
+										class="benchmark-results__method"
+										data-sort-value={rowIndex}
+										scope="row"
+										style={{ '--comparison-color': getComparisonColor(scenario.overallFactor) }}
+									>
+										<a class="benchmark-results__method-link" href={withBasePath(scenario.pagePath)}>
+											{ getComparisonName(scenario) }
+										</a>
+										<a class="benchmark-results__report-link" href={withBasePath(scenario.reportPath)}>Lighthouse report</a>
+									</th>
+									<td
+										class="benchmark-results__metric benchmark-results__metric--overall"
+										data-sort-value={scenario.overallFactor}
+										style={{ '--comparison-color': getComparisonColor(scenario.overallFactor) }}
+									>
+										<strong class="benchmark-results__metric-value">
+											×{ scenario.overallFactor.toFixed(2) }
+										</strong>
+										<span class="benchmark-results__metric-range">5-domain mean</span>
+									</td>
+									{ mainMetricColumns.map((column) => {
+										const metric = scenario.metrics[column.name];
+										const factor = scenario.factors[column.name];
+										const metricRange = metric ? formatMetricRange(metric, column.unit) : null;
+
+										return (
+											<td
+												aria-label={getCellLabel(scenario, column)}
+												class="benchmark-results__metric"
+												data-sort-value={metric?.median}
+												style={{
+													'--comparison-color': factor === undefined
+														? 'transparent'
+														: getComparisonColor(factor),
+												}}
+											>
+												{ metric
+													? (
+														<>
+															<span class="benchmark-results__metric-heading">
+																<strong class="benchmark-results__metric-value">
+																	{ formatMetricValue(metric.median, column.unit) }
+																</strong>
+																{ factor !== undefined && (
+																	<small class="benchmark-results__metric-factor">
+																		×{ factor.toFixed(2) }
+																	</small>
+																) }
+															</span>
+															{ metricRange && (
+																<BenchmarkMetricRange
+																	column={column}
+																	metricRange={metricRange}
+																	scenario={scenario}
+																/>
+															) }
+														</>
+													)
+													: '—' }
+											</td>
+										);
+									}) }
+								</tr>
+							)) }
+						</tbody>
+					</table>
+				</section>
+			</section>
+
+			<!-- Vue hydration -->
+			<section class="benchmark-results__section" aria-labelledby="bonus-results-title">
+				<div class="benchmark-results__section-heading">
+					<div>
+						<p class="benchmark-results__eyebrow">Vue matrix</p>
+						<h2 class="benchmark-results__section-title" id="bonus-results-title">
+							Vue hydration
+						</h2>
+					</div>
+					<p class="benchmark-results__section-copy">
+						Compared separately from browser-native methods and extended with JavaScript and main-thread costs.
+						Each Vue result is followed by its unranked browser-native reference. Use any column heading to sort
+						both pairs.
+					</p>
+				</div>
+
+				<section
+					aria-label="Scrollable Vue results"
+					class="benchmark-results__table-scroller"
+				>
+					<table class="benchmark-results__table" data-sortable-table>
+						<caption>Performance comparison of Vue SVG icon implementations</caption>
+						<thead>
+							<tr>
+								<th class="benchmark-results__method-heading" scope="col" aria-sort="ascending">
+									<button
+										class="benchmark-results__sort-button"
+										data-sort-button
+										data-sort-direction="ascending"
+										type="button"
+									>
+										Method
+									</button>
+								</th>
+								<th scope="col">
+									<button
+										class="benchmark-results__sort-button"
+										data-sort-button
+										data-sort-direction="ascending"
+										type="button"
+									>
+										Overall
+									</button>
+								</th>
+								{ bonusMetricColumns.map((column) => (
+									<th scope="col">
+										<button
+											class="benchmark-results__sort-button"
+											data-sort-button
+											data-sort-direction={column.direction === 'higher' ? 'descending' : 'ascending'}
+											type="button"
+										>
+											<abbr title={column.title}>{ column.label }</abbr>
+										</button>
+									</th>
+								)) }
+							</tr>
+						</thead>
+						<tbody data-sort-body>
+							{ bonusRows.map((scenario, rowIndex) => {
+								const referenceScenario = getBonusReferenceScenario(scenario);
+
+								return (
+									<>
+										<tr data-sort-id={scenario.id} data-sort-row data-default-order={rowIndex}>
+											<th
+												class="benchmark-results__method"
+												data-sort-value={rowIndex}
+												scope="row"
+												style={{ '--comparison-color': getComparisonColor(scenario.overallFactor) }}
+											>
+												<a class="benchmark-results__method-link" href={withBasePath(scenario.pagePath)}>
+													{ getComparisonName(scenario) }
+												</a>
+												<a class="benchmark-results__report-link" href={withBasePath(scenario.reportPath)}>Lighthouse report</a>
+											</th>
+											<td
+												class="benchmark-results__metric benchmark-results__metric--overall"
+												data-sort-value={scenario.overallFactor}
+												style={{ '--comparison-color': getComparisonColor(scenario.overallFactor) }}
+											>
+												<strong class="benchmark-results__metric-value">
+													×{ scenario.overallFactor.toFixed(2) }
+												</strong>
+												<span class="benchmark-results__metric-range">5-domain mean</span>
+											</td>
+											{ bonusMetricColumns.map((column) => {
+												const metric = scenario.metrics[column.name];
+												const factor = scenario.factors[column.name];
+												const metricRange = metric ? formatMetricRange(metric, column.unit) : null;
+
+												return (
+													<td
+														aria-label={getCellLabel(scenario, column)}
+														class="benchmark-results__metric"
+														data-sort-value={metric?.median}
+														style={{
+															'--comparison-color': factor === undefined
+																? 'transparent'
+																: getComparisonColor(factor),
+														}}
+													>
+														{ metric
+															? (
+																<>
+																	<span class="benchmark-results__metric-heading">
+																		<strong class="benchmark-results__metric-value">
+																			{ formatMetricValue(metric.median, column.unit) }
+																		</strong>
+																		{ factor !== undefined && (
+																			<small class="benchmark-results__metric-factor">
+																				×{ factor.toFixed(2) }
+																			</small>
+																		) }
+																	</span>
+																	{ metricRange && (
+																		<BenchmarkMetricRange
+																			column={column}
+																			metricRange={metricRange}
+																			scenario={scenario}
+																		/>
+																	) }
+																</>
+															)
+															: '—' }
+													</td>
+												);
+											}) }
+										</tr>
+										{ referenceScenario && (
+											<tr
+												class="benchmark-results__reference-row"
+												data-reference-for={scenario.id}
+											>
+												<th
+													class="benchmark-results__method benchmark-results__method--reference"
+													scope="row"
+												>
+													<span class="benchmark-results__reference-label">Without Vue</span>
+													<a class="benchmark-results__method-link" href={withBasePath(referenceScenario.pagePath)}>
+														{ getComparisonName(referenceScenario) }
+													</a>
+													<a class="benchmark-results__report-link" href={withBasePath(referenceScenario.reportPath)}>
+														Lighthouse report
+													</a>
+												</th>
+												<td class="benchmark-results__metric benchmark-results__metric--overall benchmark-results__metric--reference">
+													<strong class="benchmark-results__metric-value">—</strong>
+													<span class="benchmark-results__metric-range">Reference only</span>
+												</td>
+												{ bonusMetricColumns.map((column) => {
+													const metric = referenceScenario.metrics[column.name];
+													const metricRange = metric ? formatMetricRange(metric, column.unit) : null;
+
+													return (
+														<td
+															aria-label={getCellLabel(referenceScenario, column)}
+															class="benchmark-results__metric benchmark-results__metric--reference"
+														>
+															{ metric
+																? (
+																	<>
+																		<strong class="benchmark-results__metric-value">
+																			{ formatMetricValue(metric.median, column.unit) }
+																		</strong>
+																		{ metricRange && (
+																			<BenchmarkMetricRange
+																				column={column}
+																				metricRange={metricRange}
+																				scenario={referenceScenario}
+																			/>
+																		) }
+																	</>
+																)
+																: '—' }
+														</td>
+													);
+												}) }
+											</tr>
+										) }
+									</>
+								);
+							}) }
+						</tbody>
+					</table>
+				</section>
+			</section>
+
+			<!-- Methodology and artifacts -->
+			<section class="benchmark-results__methodology" aria-labelledby="methodology-title">
+				<div>
+					<p class="benchmark-results__eyebrow">Reproducibility</p>
+					<h2 class="benchmark-results__section-title" id="methodology-title">Methodology</h2>
+				</div>
+				<div class="benchmark-results__methodology-copy">
+					<p>
+						All scenarios render the same deterministic sequence of { benchmarkIconCount } icons.
+						Lighthouse runs use a mobile viewport, storage reset and
+						×{ summary.environment.cpuSlowdownMultiplier } DevTools CPU slowdown. One neutral Lighthouse warm-up
+						run is discarded; measured scenario order is shuffled in every round.
+					</p>
+					<p>
+						Lighthouse, Load and controlled TBT use independent five-measurement samples. When a timing metric
+						has exactly one robust outlier, its probe receives two additional measurements. Calm additional
+						values replace that outlier in the published median; every raw measurement remains available.
+					</p>
+					<p>
+						Colors represent the ratio to the best result per metric: green is best, yellow is approximately
+						2×, and red is 4× or worse. Overall gives equal weight to five performance domains and is calculated
+						separately for the primary and Vue matrices.
+					</p>
+					<p>
+						Every bare page uses the same large heading as its stable LCP candidate. LCP and Score are required;
+						Overall includes FCP and LCP but excludes Score, TTI and Speed Index. Differences within 5% are treated
+						as equivalent, and each metric contribution is capped at 4×.
+					</p>
+					<p>
+						Requests include only method-specific HTTP resources; the HTML document, shared page stylesheet
+						and embedded data URLs are excluded.
+					</p>
+					<p class="benchmark-results__artifact-links">
+						<a href={withBasePath('/reports/summary.json')}>Aggregated summary</a>
+						<a href={withBasePath('/reports/manifest.json')}>Environment manifest</a>
+					</p>
+				</div>
+			</section>
+		</>
+	) }
+
+	<!-- Table sorting -->
+	<script>
+		const tables = document.querySelectorAll<HTMLTableElement>('[data-sortable-table]');
+
+		for (const table of tables) {
+			const body = table.querySelector<HTMLTableSectionElement>('[data-sort-body]');
+			const buttons = [...table.querySelectorAll<HTMLButtonElement>('[data-sort-button]')];
+			const rows = [...table.querySelectorAll<HTMLTableRowElement>('[data-sort-row]')];
+			const referenceRows = new Map(
+				[...table.querySelectorAll<HTMLTableRowElement>('[data-reference-for]')].flatMap((row) => {
+					const scenarioId = row.dataset.referenceFor;
+					return scenarioId ? [[scenarioId, row] as const] : [];
+				}),
+			);
+
+			if (!body || rows.length === 0) continue;
+
+			const getDefaultOrder = (row: HTMLTableRowElement): number => {
+				const value = Number(row.dataset.defaultOrder);
+				return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+			};
+
+			const getSortValue = (row: HTMLTableRowElement, columnIndex: number): number | null => {
+				const value = row.cells.item(columnIndex)?.dataset.sortValue;
+
+				if (value === undefined || value === '') return null;
+
+				const numericValue = Number(value);
+				return Number.isFinite(numericValue) ? numericValue : null;
+			};
+
+			for (const button of buttons) {
+				button.addEventListener('click', () => {
+					const header = button.closest<HTMLTableCellElement>('th');
+
+					if (!header) return;
+
+					const currentDirection = header.getAttribute('aria-sort');
+					const defaultDirection = button.dataset.sortDirection === 'descending'
+						? 'descending'
+						: 'ascending';
+					const direction = currentDirection === 'ascending'
+						? 'descending'
+						: currentDirection === 'descending'
+							? 'ascending'
+							: defaultDirection;
+					const directionMultiplier = direction === 'ascending' ? 1 : -1;
+
+					rows.sort((first, second) => {
+						const firstValue = getSortValue(first, header.cellIndex);
+						const secondValue = getSortValue(second, header.cellIndex);
+
+						if (firstValue === null && secondValue !== null) return 1;
+						if (firstValue !== null && secondValue === null) return -1;
+						if (firstValue !== null && secondValue !== null) {
+							const difference = (firstValue - secondValue) * directionMultiplier;
+
+							if (difference !== 0) return difference;
+						}
+
+						return getDefaultOrder(first) - getDefaultOrder(second);
+					});
+
+					const fragment = document.createDocumentFragment();
+
+					for (const row of rows) {
+						fragment.append(row);
+
+						const referenceRow = row.dataset.sortId
+							? referenceRows.get(row.dataset.sortId)
+							: undefined;
+
+						if (referenceRow) fragment.append(referenceRow);
+					}
+
+					body.append(fragment);
+
+					for (const currentHeader of table.querySelectorAll('thead th')) {
+						currentHeader.removeAttribute('aria-sort');
+					}
+
+					header.setAttribute('aria-sort', direction);
+				});
+			}
+		}
+	</script>
+</LayoutDefault>

@@ -1,0 +1,76 @@
+---
+import { useBem } from '#utils';
+
+interface Props {
+	text: string;
+	link?: string | null;
+	items?: any[];
+	depth: number;
+	bemBlockName: string;
+	itemPath: string;
+}
+
+const { text, link, items, bemBlockName, depth, itemPath } = Astro.props;
+
+const $b = useBem(bemBlockName);
+
+const isLastDepth = items?.every((item) => !item.items?.length);
+const submenuId = items?.length ? `header-nav-submenu-${itemPath}` : undefined;
+const isCurrent = link ? Astro.url.pathname.startsWith(link) : false;
+
+const getLinkProps = (href?: string) => {
+	const linkProps = {
+		class: $b('link', {
+			current: isCurrent,
+			last: isLastDepth,
+			depth,
+		}),
+		href,
+	};
+
+	return {
+		...linkProps,
+		'aria-current': isCurrent ? 'page' : undefined,
+	} as const;
+};
+---
+
+<li class={$b('item', { depth })}>
+	<!-- Link -->
+	{ link && <a {...getLinkProps(link)}>{ text }</a> }
+
+	<!-- Submenu trigger -->
+	{ !link && (
+		<button
+			{...getLinkProps()}
+			type="button"
+			aria-controls={submenuId}
+			aria-expanded="false"
+			data-nav-disclosure
+		>
+			{ text }
+
+			{/* Arrow */}
+			<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" class={$b('arrow')}>
+				<path d="M12,16c-0.3,0-0.5-0.1-0.7-0.3l-6-6c-0.4-0.4-0.4-1,0-1.4s1-0.4,1.4,0l5.3,5.3l5.3-5.3c0.4-0.4,1-0.4,1.4,0s0.4,1,0,1.4l-6,6C12.5,15.9,12.3,16,12,16z"></path>
+			</svg>
+		</button>
+	) }
+
+	{ items?.length && (
+		<ul
+			id={submenuId}
+			class={$b('dropdown', { depth, last: isLastDepth })}
+			data-nav-submenu
+		>
+			{ items.map((item, index) =>
+				<Astro.self
+					depth={depth + 1}
+					bemBlockName={bemBlockName}
+					itemPath={`${itemPath}-${index + 1}`}
+					{...item}
+				/>)
+			}
+		</ul>
+	) }
+</li>

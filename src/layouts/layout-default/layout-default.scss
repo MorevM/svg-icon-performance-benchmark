@@ -1,0 +1,55 @@
+/* stylelint-disable @morev/bem/match-file-name */
+/* stylelint-disable @morev/bem/block-variable */
+/* stylelint-disable @morev/bem/no-side-effects */
+:root {
+	font-family:
+		'Inter var experimental',
+		'Inter var',
+		Inter,
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		Roboto,
+		Oxygen,
+		Ubuntu,
+		Cantarell,
+		'Fira Sans',
+		'Droid Sans',
+		'Helvetica Neue',
+		sans-serif;
+	scrollbar-gutter: stable both-edges;
+
+	&.no-scroll {
+		overflow: hidden;
+	}
+}
+
+.layout-default {
+	$b: #{&};
+
+	&__skip-link {
+		position: fixed;
+		inset-block-start: 8px;
+		inset-inline-start: 8px;
+		z-index: 4;
+		padding: 10px 14px;
+		color: #ffffff;
+		background-color: var(--color-primary-dark);
+		border-radius: 6px;
+		opacity: 0;
+		transform: translateY(calc(-100% - 16px));
+		transition-property: opacity, transform;
+		transition-duration: var(--transition-primary);
+
+		&:focus {
+			opacity: 1;
+			outline: 2px solid #ffffff;
+			outline-offset: -4px;
+			transform: none;
+		}
+	}
+
+	&__title-container {
+		padding-block: 32px;
+	}
+}

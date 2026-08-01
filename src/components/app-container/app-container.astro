@@ -1,0 +1,15 @@
+---
+import { useBem } from '#utils';
+import './app-container.scss';
+
+interface Props {
+	className?: string;
+}
+
+const { className = '' } = Astro.props;
+
+const $b = useBem('app-container');
+---
+<div class={$b(null, className)}>
+	<slot />
+</div>

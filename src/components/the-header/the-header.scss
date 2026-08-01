@@ -1,0 +1,45 @@
+.the-header {
+	$b: #{&};
+
+	position: sticky;
+	inset-block-start: 0;
+	z-index: 2;
+	display: block flex;
+	block-size: var(--header-height);
+	background-color: #f7f7f7;
+	box-shadow: inset 0 -1px 0 rgb(0 0 0 / .05);
+
+	&__logo {
+		display: block flex;
+		align-items: center;
+		color: var(--color-text);
+		font-size: 16px;
+		font-weight: 500;
+		transition: color var(--transition-primary);
+
+		&:hover {
+			color: var(--color-primary-light);
+		}
+
+		&:focus-visible {
+			border-radius: 4px;
+			outline: 2px solid var(--color-primary);
+			outline-offset: 4px;
+		}
+
+		&:active {
+			color: var(--color-primary-dark);
+		}
+
+		&--current {
+			color: var(--color-primary);
+			box-shadow: inset 0 -1px 0 var(--color-primary);
+		}
+	}
+
+	&__container {
+		display: block flex;
+		justify-content: space-between;
+		inline-size: 100%;
+	}
+}

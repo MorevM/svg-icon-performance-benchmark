@@ -1,0 +1,13 @@
+.vue-icons-grid {
+	$b: #{&};
+
+	display: block grid;
+	grid-template-columns: repeat(auto-fit, minmax(24px, 1fr));
+	gap: var(--layout-gutter);
+
+	&__icon {
+		fill: currentColor;
+		inline-size: 24px;
+		block-size: 24px;
+	}
+}

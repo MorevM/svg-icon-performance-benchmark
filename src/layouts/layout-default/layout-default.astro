@@ -1,0 +1,54 @@
+---
+import { useBem } from '#utils';
+
+import AppContainer from '~components/app-container/app-container.astro';
+import TheHeader from '~components/the-header/the-header.astro';
+
+import '@morev/css/reset.css';
+import '@morev/css/reset/reduced-motion.css';
+import '~assets/styles/variables.scss';
+import './layout-default.scss';
+
+interface Props {
+	title: string;
+	lang: 'en' | 'ru';
+}
+
+const { title, lang } = Astro.props;
+
+const $b = useBem('layout-default');
+
+const hasTitleSlot = Astro.slots.has('title');
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{ title }</title>
+
+		<!-- Page-specific head -->
+		<slot name="head" />
+	</head>
+
+	<body>
+		<div id="global-wrapper">
+			<a class={$b('skip-link')} href="#main-content">Skip to content</a>
+			<TheHeader />
+
+			<main id="main-content" tabindex="-1">
+				{ hasTitleSlot && (
+					<AppContainer className={$b('title-container')}>
+						<slot name="title" />
+					</AppContainer>
+				) }
+
+				<AppContainer>
+					<slot />
+				</AppContainer>
+			</main>
+		</div>
+	</body>
+</html>

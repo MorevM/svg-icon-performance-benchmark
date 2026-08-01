@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 2,
+	"probe": "render",
+	"totalBlockingTime": 182,
+	"startTime": 89.39999999850988,
+	"endTime": 1037.7000000029802,
+	"longTasks": [
+		{
+			"startTime": 88.20000000298023,
+			"duration": 232
+		}
+	]
+}

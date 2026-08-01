@@ -1,0 +1,30 @@
+---
+import { useBem, withBasePath } from '#utils';
+import AppContainer from '~components/app-container/app-container.astro';
+import HeaderNav from './header-nav/header-nav.astro';
+import './the-header.scss';
+
+interface Props {
+	className?: string;
+}
+
+const { className } = Astro.props;
+
+const $b = useBem('the-header');
+const homepagePath = withBasePath('/');
+const isHomepage = Astro.url.pathname === homepagePath;
+---
+
+<header class={$b(null, className)}>
+	<AppContainer className={$b('container')}>
+		<a
+			class={$b('logo', { current: isHomepage })}
+			href={homepagePath}
+			aria-current={isHomepage ? 'page' : undefined}
+		>
+			SVG performance testing
+		</a>
+
+		<HeaderNav />
+	</AppContainer>
+</header>

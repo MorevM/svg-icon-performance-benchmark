@@ -1,0 +1,65 @@
+---
+import {
+	getMeasurementDeviations,
+	hasSignificantMeasurementDeviation,
+} from '~benchmark/summary-presentation';
+import type { BenchmarkScenarioSummary } from '~benchmark/report-contracts';
+import type { BenchmarkMetricColumn } from '~benchmark/summary-presentation';
+
+
+/**
+ * Data required to render one metric range and its measurement tooltip.
+ */
+interface Props {
+	/**
+	 * Scenario that owns the metric measurements.
+	 */
+	scenario: BenchmarkScenarioSummary;
+
+	/**
+	 * Metric formatting and identity metadata.
+	 */
+	column: BenchmarkMetricColumn;
+
+	/**
+	 * Preformatted retained min–max range.
+	 */
+	metricRange: string;
+}
+
+const {
+	scenario,
+	column,
+	metricRange,
+} = Astro.props;
+const measurements = getMeasurementDeviations(scenario, column);
+const hasSignificantDeviation = hasSignificantMeasurementDeviation(scenario, column);
+const tooltipId = `measurement-tooltip-${scenario.id}-${column.name}`;
+---
+
+<span class="benchmark-results__metric-range-wrap">
+	<button
+		aria-describedby={tooltipId}
+		class="benchmark-results__metric-range benchmark-results__metric-range--tooltip-trigger"
+		type="button"
+	>
+		{ metricRange }
+		{ hasSignificantDeviation && (
+			<span class="benchmark-results__metric-deviation-alert">!</span>
+		) }
+	</button>
+	<span class="benchmark-results__metric-tooltip" id={tooltipId} role="tooltip">
+		{ measurements.map((measurement) => (
+			<span
+				class:list={[
+					'benchmark-results__metric-tooltip-row',
+					{ 'benchmark-results__metric-tooltip-row--excluded': measurement.isExcluded },
+				]}
+			>
+				<span class="benchmark-results__metric-tooltip-run">{ measurement.label }</span>
+				<span>{ measurement.value }</span>
+				<span>{ measurement.deviation }</span>
+			</span>
+		)) }
+	</span>
+</span>
