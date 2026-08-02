@@ -1,12 +1,11 @@
 {
-	"schemaVersion": 3,
+	"schemaVersion": 4,
 	"generatedAt": "2026-07-31T15:55:27.237Z",
 	"commitSha": "bae9a0c23a48bafb5fa628ac38ccb866ac9c0b93",
 	"isWorkingTreeDirty": true,
 	"runCount": 5,
 	"probeMeasurementCounts": {
 		"lighthouse": 7,
-		"load": 7,
 		"render": 7
 	},
 	"roundOrders": [
@@ -161,48 +160,6 @@
 					"img-source-from-icon"
 				]
 			],
-			"load": [
-				[
-					"mask-image-source-as-data-uri",
-					"background-image-source-as-base64",
-					"background-image-source-from-sprite",
-					"sprite-inlined",
-					"vue-inline-svg-components",
-					"background-image-source-from-icon",
-					"img-source-from-base64",
-					"vue-inlined-symbol-sprite",
-					"inline-as-html",
-					"mask-image-source-from-icon",
-					"mask-image-source-from-sprite",
-					"img-source-from-icon-lazy",
-					"background-image-source-as-data-uri",
-					"img-source-from-sprite",
-					"img-source-from-data-uri",
-					"mask-image-source-as-base64",
-					"sprite-external",
-					"img-source-from-icon"
-				],
-				[
-					"img-source-from-icon-lazy",
-					"img-source-from-base64",
-					"background-image-source-as-base64",
-					"sprite-external",
-					"img-source-from-data-uri",
-					"inline-as-html",
-					"background-image-source-as-data-uri",
-					"vue-inline-svg-components",
-					"mask-image-source-as-data-uri",
-					"vue-inlined-symbol-sprite",
-					"sprite-inlined",
-					"mask-image-source-from-sprite",
-					"img-source-from-icon",
-					"img-source-from-sprite",
-					"mask-image-source-as-base64",
-					"background-image-source-from-icon",
-					"mask-image-source-from-icon",
-					"background-image-source-from-sprite"
-				]
-			],
 			"render": [
 				[
 					"mask-image-source-as-data-uri",
@@ -280,8 +237,6 @@
 	},
 	"controlledMeasurements": {
 		"cpuSlowdownMultiplier": 6,
-		"loadNetworkProfile": "Puppeteer Slow 4G",
-		"loadCachePolicy": "Cache disabled in a fresh browser context before each navigation.",
 		"renderCachePolicy": "Resources warmed in a fresh browser context before each controlled render.",
 		"renderWindowStart": "Immediately before inserting the 1000-icon payload after two animation frames.",
 		"renderWindowEnd": "After hydration, network idle and two rendered animation frames."

@@ -41,9 +41,7 @@ import {
 	benchmarkScenarios,
 } from '~benchmark/scenarios';
 import {
-	measureControlledMetrics,
 	measureControlledRender,
-	measureThrottledLoad,
 } from './controlled-measurements';
 import { extractBenchmarkMetrics } from './lighthouse-result';
 import { startServer } from './server';
@@ -132,6 +130,27 @@ type ProbeMeasurementOptions = {
 	index: number;
 	phase: BenchmarkMeasurementPhase;
 	outputDirectory: string;
+};
+
+type ReaggregatableBenchmarkSummary = Omit<BenchmarkSummary, 'schemaVersion'> & {
+	/**
+	 * Current contract or the previous contract with an independent Load probe.
+	 */
+	schemaVersion: 3 | 4;
+};
+
+type ReaggregatableBenchmarkManifest = Omit<BenchmarkManifest, 'schemaVersion'> & {
+	/**
+	 * Current contract or the previous contract with an independent Load probe.
+	 */
+	schemaVersion: 3 | 4;
+};
+
+type LegacyRunMetrics = Partial<BenchmarkRunMetrics> & {
+	/**
+	 * Previous diagnostic name for the Lighthouse-observed load event.
+	 */
+	observedLoadEvent?: number | null;
 };
 
 type ManifestOptions = {
@@ -356,19 +375,6 @@ const runProbeMeasurement = async (options: ProbeMeasurementOptions): Promise<Sc
 		metrics = pickProbeMetrics(extractBenchmarkMetrics(result.lhr), probe);
 		contents = getJsonReport(result);
 		warnings = result.lhr.runWarnings;
-	} else if (probe === 'load') {
-		const loadEvent = await measureThrottledLoad(
-			browser,
-			new URL(scenario.barePagePath, host).href,
-			CPU_SLOWDOWN_MULTIPLIER,
-		);
-
-		metrics = { loadEvent };
-		contents = JSON.stringify({
-			schemaVersion: 2,
-			probe,
-			loadEvent,
-		}, null, '\t');
 	} else {
 		const render = await measureControlledRender(
 			browser,
@@ -609,7 +615,7 @@ const createManifest = (options: ManifestOptions): BenchmarkManifest => {
 	const isWorkingTreeDirty = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim() !== '';
 
 	return {
-		schemaVersion: 3,
+		schemaVersion: 4,
 		generatedAt,
 		commitSha,
 		isWorkingTreeDirty,
@@ -657,8 +663,6 @@ const createManifest = (options: ManifestOptions): BenchmarkManifest => {
 		},
 		controlledMeasurements: {
 			cpuSlowdownMultiplier: CPU_SLOWDOWN_MULTIPLIER,
-			loadNetworkProfile: 'Puppeteer Slow 4G',
-			loadCachePolicy: 'Cache disabled in a fresh browser context before each navigation.',
 			renderCachePolicy: 'Resources warmed in a fresh browser context before each controlled render.',
 			renderWindowStart: `Immediately before inserting the ${BENCHMARK_ICON_COUNT}-icon payload after two animation frames.`,
 			renderWindowEnd: 'After hydration, network idle and two rendered animation frames.',
@@ -732,8 +736,18 @@ const restoreScenarioMeasurements = (
 	for (const probe of benchmarkProbeNames) {
 		measurements[probe] = scenario.probes[probe].measurements.map((measurement) => {
 			let warnings: string[] = [];
+			const legacyMetrics = measurement.metrics as LegacyRunMetrics;
+			const { observedLoadEvent, ...currentMetrics } = legacyMetrics;
+			let metrics: Partial<BenchmarkRunMetrics> = currentMetrics;
 
 			if (probe === 'lighthouse') {
+				const loadEvent = currentMetrics.loadEvent ?? observedLoadEvent;
+
+				if (loadEvent === undefined) {
+					throw new Error(`${scenario.id} has no Lighthouse-observed Load metric.`);
+				}
+
+				metrics = { ...currentMetrics, loadEvent };
 				const lhr = JSON.parse(
 					readFileSync(path.join(reportsDirectory, measurement.artifactPath), 'utf8'),
 				) as RunnerResult['lhr'];
@@ -745,7 +759,7 @@ const restoreScenarioMeasurements = (
 				probe,
 				index: measurement.index,
 				phase: measurement.phase,
-				metrics: measurement.metrics,
+				metrics,
 				artifactPath: measurement.artifactPath,
 				warnings,
 			};
@@ -785,13 +799,16 @@ const reaggregateReports = async (): Promise<void> => {
 
 		const existingSummary = JSON.parse(
 			readFileSync(path.join(outputDirectory, 'summary.json'), 'utf8'),
-		) as BenchmarkSummary;
+		) as ReaggregatableBenchmarkSummary;
 		const existingManifest = JSON.parse(
 			readFileSync(path.join(outputDirectory, 'manifest.json'), 'utf8'),
-		) as BenchmarkManifest;
+		) as ReaggregatableBenchmarkManifest;
 
-		if (existingSummary.schemaVersion !== 3 || existingManifest.schemaVersion !== 3) {
-			throw new Error('Only schema version 3 reports can be reaggregated.');
+		if (
+			(existingSummary.schemaVersion !== 3 && existingSummary.schemaVersion !== 4)
+			|| (existingManifest.schemaVersion !== 3 && existingManifest.schemaVersion !== 4)
+		) {
+			throw new Error('Only schema version 3 or 4 reports can be reaggregated.');
 		}
 
 		const existingScenarios = new Map(existingSummary.scenarios.map((scenario) => {
@@ -858,11 +875,13 @@ const reaggregateReports = async (): Promise<void> => {
 		});
 		const summary: BenchmarkSummary = {
 			...existingSummary,
+			schemaVersion: 4,
 			probeMeasurementCounts,
 			scenarios,
 		};
 		const manifest: BenchmarkManifest = {
 			...existingManifest,
+			schemaVersion: 4,
 			probeMeasurementCounts,
 			adaptiveMeasurements: {
 				...existingManifest.adaptiveMeasurements,
@@ -872,9 +891,26 @@ const reaggregateReports = async (): Promise<void> => {
 				minimumAbsoluteDeviation: ADAPTIVE_OUTLIER_OPTIONS.minimumAbsoluteDeviation,
 				minimumRelativeDeviation: ADAPTIVE_OUTLIER_OPTIONS.minimumRelativeDeviation,
 				triggerOutlierCount: 1,
+				probeRoundOrders: Object.fromEntries(benchmarkProbeNames.flatMap((probe) => {
+					const orders = existingManifest.adaptiveMeasurements.probeRoundOrders[probe];
+					return orders ? [[probe, orders]] : [];
+				})),
 				selectionPolicy: ADAPTIVE_SELECTION_POLICY,
 			},
+			controlledMeasurements: {
+				cpuSlowdownMultiplier: existingManifest.controlledMeasurements.cpuSlowdownMultiplier,
+				renderCachePolicy: existingManifest.controlledMeasurements.renderCachePolicy,
+				renderWindowStart: existingManifest.controlledMeasurements.renderWindowStart,
+				renderWindowEnd: existingManifest.controlledMeasurements.renderWindowEnd,
+			},
 		};
+
+		for (const scenario of benchmarkScenarios) {
+			rmSync(
+				path.join(outputDirectory, 'scenarios', scenario.id, 'measurements', 'load'),
+				{ recursive: true, force: true },
+			);
+		}
 
 		writeArtifact(
 			path.join(outputDirectory, 'summary.json'),
@@ -949,7 +985,7 @@ const runBenchmark = async (): Promise<void> => {
 
 		console.log(`  ${warmupScenario.id}`);
 		await runLighthouse(server.origin, browserPort, warmupScenario);
-		await measureControlledMetrics(
+		await measureControlledRender(
 			browser,
 			server.origin,
 			warmupScenario,
@@ -1039,7 +1075,7 @@ const runBenchmark = async (): Promise<void> => {
 			);
 		});
 		const summary: BenchmarkSummary = {
-			schemaVersion: 3,
+			schemaVersion: 4,
 			generatedAt,
 			iconCount: BENCHMARK_ICON_COUNT,
 			runCount,

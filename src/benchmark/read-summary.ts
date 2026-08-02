@@ -20,7 +20,7 @@ const readBenchmarkSummary = (): BenchmarkSummary | null => {
 		schemaVersion?: unknown;
 	};
 
-	if (summary.schemaVersion !== 3) return null;
+	if (summary.schemaVersion !== 4) return null;
 
 	const benchmarkSummary = summary as BenchmarkSummary;
 	const scenarioIds = benchmarkSummary.scenarios.map((scenario) => scenario.id);

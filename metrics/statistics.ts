@@ -51,7 +51,6 @@ const benchmarkMetricNames = [
 	'lighthouseTotalBlockingTime',
 	'speedIndex',
 	'loadEvent',
-	'observedLoadEvent',
 	'parseHtml',
 	'styleAndLayout',
 	'paintCompositeAndRender',

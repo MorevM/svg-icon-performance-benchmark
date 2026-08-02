@@ -5,7 +5,6 @@ import type {
 
 const benchmarkProbeNames = [
 	'lighthouse',
-	'load',
 	'render',
 ] as const satisfies BenchmarkProbeName[];
 
@@ -16,7 +15,7 @@ const probeTimingMetricNames = {
 		'timeToInteractive',
 		'lighthouseTotalBlockingTime',
 		'speedIndex',
-		'observedLoadEvent',
+		'loadEvent',
 		'parseHtml',
 		'styleAndLayout',
 		'paintCompositeAndRender',
@@ -24,7 +23,6 @@ const probeTimingMetricNames = {
 		'scriptEvaluation',
 		'maxPotentialFid',
 	],
-	load: ['loadEvent'],
 	render: ['totalBlockingTime'],
 } as const satisfies Record<BenchmarkProbeName, readonly BenchmarkMetricName[]>;
 
@@ -33,10 +31,9 @@ const probeTimingMetricNames = {
  *
  * @param   metricName   Metric stored in benchmark artifacts.
  *
- * @returns              Lighthouse, Load or controlled rendering probe.
+ * @returns              Lighthouse or controlled rendering probe.
  */
 const getBenchmarkMetricProbe = (metricName: BenchmarkMetricName): BenchmarkProbeName => {
-	if (metricName === 'loadEvent') return 'load';
 	if (metricName === 'totalBlockingTime') return 'render';
 	return 'lighthouse';
 };

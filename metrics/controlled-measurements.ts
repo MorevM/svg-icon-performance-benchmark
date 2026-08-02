@@ -1,4 +1,3 @@
-import { PredefinedNetworkConditions } from 'puppeteer-core';
 import { BENCHMARK_ICON_COUNT } from '~benchmark/scenarios';
 import type { Browser, Page } from 'puppeteer-core';
 import type { BenchmarkScenario } from '~benchmark/scenarios';
@@ -19,43 +18,28 @@ type LongTaskMeasurement = {
 };
 
 /**
- * Measurements collected outside Lighthouse for one scenario run.
+ * Controlled rendering measurement collected outside Lighthouse.
  */
-type ControlledMeasurements = {
+type ControlledRenderMeasurement = {
 	/**
-	 * Cold navigation measured with real CPU and network throttling.
+	 * Sum of long-task blocking portions inside the controlled window.
 	 */
-	navigation: {
-		/**
-		 * Window load event end relative to navigation start, in milliseconds.
-		 */
-		loadEvent: number;
-	};
+	totalBlockingTime: number;
 
 	/**
-	 * Warm-cache icon insertion measured after the shell has painted.
+	 * Controlled window start relative to navigation start, in milliseconds.
 	 */
-	render: {
-		/**
-		 * Sum of long-task blocking portions inside the controlled window.
-		 */
-		totalBlockingTime: number;
+	startTime: number;
 
-		/**
-		 * Controlled window start relative to navigation start, in milliseconds.
-		 */
-		startTime: number;
+	/**
+	 * Controlled window end relative to navigation start, in milliseconds.
+	 */
+	endTime: number;
 
-		/**
-		 * Controlled window end relative to navigation start, in milliseconds.
-		 */
-		endTime: number;
-
-		/**
-		 * Long tasks reported by Chromium during the controlled page lifetime.
-		 */
-		longTasks: LongTaskMeasurement[];
-	};
+	/**
+	 * Long tasks reported by Chromium during the controlled page lifetime.
+	 */
+	longTasks: LongTaskMeasurement[];
 };
 
 type BrowserMeasurementState = {
@@ -105,51 +89,12 @@ const calculateWindowBlockingTime = (
 	}, 0);
 };
 
-const measureThrottledLoad = async (
-	browser: Browser,
-	url: string,
-	cpuSlowdownMultiplier: number,
-): Promise<number> => {
-	const context = await browser.createBrowserContext();
-
-	try {
-		const page = await context.newPage();
-		await setMobileViewport(page);
-		await page.setCacheEnabled(false);
-		await page.emulateCPUThrottling(cpuSlowdownMultiplier);
-		await page.emulateNetworkConditions(PredefinedNetworkConditions['Slow 4G']);
-		await page.goto(url, {
-			waitUntil: 'load',
-			timeout: 60_000,
-		});
-		await page.waitForFunction(() => {
-			const navigation = performance.getEntriesByType('navigation')[0];
-			return navigation instanceof PerformanceNavigationTiming && navigation.loadEventEnd > 0;
-		});
-
-		const loadEvent = await page.evaluate(() => {
-			const navigation = performance.getEntriesByType('navigation')[0];
-
-			if (!(navigation instanceof PerformanceNavigationTiming)) return null;
-			return navigation.loadEventEnd;
-		});
-
-		if (loadEvent === null || !Number.isFinite(loadEvent) || loadEvent <= 0) {
-			throw new Error('Controlled navigation did not produce a valid load event.');
-		}
-
-		return loadEvent;
-	} finally {
-		await context.close();
-	}
-};
-
 const measureControlledRender = async (
 	browser: Browser,
 	host: string,
 	scenario: BenchmarkScenario,
 	cpuSlowdownMultiplier: number,
-): Promise<ControlledMeasurements['render']> => {
+): Promise<ControlledRenderMeasurement> => {
 	const context = await browser.createBrowserContext();
 
 	try {
@@ -250,49 +195,7 @@ const measureControlledRender = async (
 	}
 };
 
-/**
- * Measures stable load and blocking windows separately from Lighthouse.
- *
- * @param   browser                 Shared Chromium instance.
- * @param   host                    Origin serving benchmark pages.
- * @param   scenario                Scenario to measure.
- * @param   cpuSlowdownMultiplier   Real DevTools CPU throttling rate.
- *
- * @returns                         Controlled navigation and render measurements.
- */
-const measureControlledMetrics = async (
-	browser: Browser,
-	host: string,
-	scenario: BenchmarkScenario,
-	cpuSlowdownMultiplier: number,
-): Promise<ControlledMeasurements> => {
-	const loadEvent = await measureThrottledLoad(
-		browser,
-		new URL(scenario.barePagePath, host).href,
-		cpuSlowdownMultiplier,
-	);
-	const render = await measureControlledRender(
-		browser,
-		host,
-		scenario,
-		cpuSlowdownMultiplier,
-	);
-
-	return {
-		navigation: {
-			loadEvent,
-		},
-		render,
-	};
-};
-
 export {
 	calculateWindowBlockingTime,
-	measureControlledMetrics,
 	measureControlledRender,
-	measureThrottledLoad,
-};
-export type {
-	ControlledMeasurements,
-	LongTaskMeasurement,
 };

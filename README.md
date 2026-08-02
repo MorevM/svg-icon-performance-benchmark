@@ -9,10 +9,9 @@ Vue hydration is measured separately, while `<embed>`, `<object>` and `<iframe>`
 
 The published benchmark renders 1,000 icons per scenario. The showcase also provides 5,000- and 20,000-icon pages for manual inspection.
 
-Three independent probes keep different costs separate:
+Two independent probes keep different costs separate:
 
-- Lighthouse measures visual loading, responsiveness, resource sizes and the Performance Score;
-- Load records `PerformanceNavigationTiming.loadEventEnd` on a cold navigation;
+- Lighthouse measures visual loading, load completion, responsiveness, resource sizes and the Performance Score;
 - controlled TBT measures Long Tasks while inserting the icon grid after resources have been prepared.
 
 A full run collects five mandatory measurements per probe and scenario. It uses a mobile viewport, DevTools network throttling

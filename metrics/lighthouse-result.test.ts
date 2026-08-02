@@ -1,8 +1,28 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { getMethodSpecificRequestCount } from './lighthouse-result';
+import {
+	extractBenchmarkMetrics,
+	getMethodSpecificRequestCount,
+} from './lighthouse-result';
 
 describe('Lighthouse result', () => {
+	it('Uses the observed Lighthouse load event as the published Load metric', () => {
+		const metrics = extractBenchmarkMetrics({
+			audits: {
+				metrics: {
+					details: {
+						items: [{ observedLoad: 1234 }],
+					},
+				},
+			},
+			categories: {
+				performance: { score: 1 },
+			},
+		} as unknown as Parameters<typeof extractBenchmarkMetrics>[0]);
+
+		assert.equal(metrics.loadEvent, 1234);
+	});
+
 	it('Excludes shared page resources and embedded data URLs', () => {
 		assert.equal(
 			getMethodSpecificRequestCount([

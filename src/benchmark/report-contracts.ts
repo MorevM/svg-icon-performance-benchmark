@@ -11,7 +11,6 @@ export type BenchmarkMetricName =
 	| 'lighthouseTotalBlockingTime'
 	| 'speedIndex'
 	| 'loadEvent'
-	| 'observedLoadEvent'
 	| 'parseHtml'
 	| 'styleAndLayout'
 	| 'paintCompositeAndRender'
@@ -68,7 +67,7 @@ export type BenchmarkMetricSummary = {
 /**
  * Independent browser operation that produces one family of benchmark metrics.
  */
-export type BenchmarkProbeName = 'lighthouse' | 'load' | 'render';
+export type BenchmarkProbeName = 'lighthouse' | 'render';
 
 /**
  * Indicates whether a measurement belongs to the mandatory or adaptive sample.
@@ -195,7 +194,7 @@ export type BenchmarkScenarioSummary = {
 	reportPath: string;
 
 	/**
-	 * Independent Lighthouse, Load and controlled rendering series.
+	 * Independent Lighthouse and controlled rendering series.
 	 */
 	probes: Record<BenchmarkProbeName, BenchmarkProbeSummary>;
 
@@ -222,7 +221,7 @@ export type BenchmarkSummary = {
 	/**
 	 * Version of this JSON contract.
 	 */
-	schemaVersion: 3;
+	schemaVersion: 4;
 
 	/**
 	 * ISO timestamp of the completed series.
@@ -277,7 +276,7 @@ export type BenchmarkManifest = {
 	/**
 	 * Version of this JSON contract.
 	 */
-	schemaVersion: 3;
+	schemaVersion: 4;
 
 	/**
 	 * ISO timestamp of the completed series.
@@ -447,16 +446,6 @@ export type BenchmarkManifest = {
 		 * Real DevTools CPU throttling rate.
 		 */
 		cpuSlowdownMultiplier: number;
-
-		/**
-		 * Network profile used for the cold Load measurement.
-		 */
-		loadNetworkProfile: string;
-
-		/**
-		 * Cache policy used for the controlled Load measurement.
-		 */
-		loadCachePolicy: string;
 
 		/**
 		 * Cache policy used before the controlled rendering window.

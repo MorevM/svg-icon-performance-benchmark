@@ -21,7 +21,6 @@ const createRun = (value: number): BenchmarkRunMetrics => {
 		lighthouseTotalBlockingTime: value,
 		speedIndex: value,
 		loadEvent: value,
-		observedLoadEvent: value,
 		parseHtml: value,
 		styleAndLayout: value,
 		paintCompositeAndRender: value,
