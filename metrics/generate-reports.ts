@@ -11,7 +11,6 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
-	renameSync,
 	rmSync,
 	writeFileSync,
 } from 'node:fs';
@@ -43,6 +42,10 @@ import {
 import {
 	measureControlledRender,
 } from './controlled-measurements';
+import {
+	removeDirectoryBestEffort,
+	replaceDirectory,
+} from './directory-replacement';
 import { extractBenchmarkMetrics } from './lighthouse-result';
 import { startServer } from './server';
 import {
@@ -793,6 +796,7 @@ const reaggregateReports = async (): Promise<void> => {
 
 	const temporaryDirectory = mkdtempSync(path.resolve('.reports-reaggregate-'));
 	const outputDirectory = path.join(temporaryDirectory, 'reports');
+	let shouldPreserveOutputDirectory = false;
 
 	try {
 		cpSync(REPORTS_DIRECTORY, outputDirectory, { recursive: true });
@@ -922,13 +926,18 @@ const reaggregateReports = async (): Promise<void> => {
 		);
 		verifyArtifacts(outputDirectory, summary, manifest);
 
-		rmSync(REPORTS_DIRECTORY, { recursive: true, force: true });
-		renameSync(outputDirectory, REPORTS_DIRECTORY);
+		shouldPreserveOutputDirectory = true;
+		await replaceDirectory(outputDirectory, REPORTS_DIRECTORY);
+		shouldPreserveOutputDirectory = false;
 		console.log('Reports reaggregated from existing raw measurements. Rebuilding the site...');
 		await build({ root: process.cwd() });
 		console.log('Report reaggregation completed.');
 	} finally {
-		rmSync(temporaryDirectory, { recursive: true, force: true });
+		if (shouldPreserveOutputDirectory) {
+			process.emitWarning(`Verified reaggregated reports were preserved at ${outputDirectory}.`);
+		} else {
+			await removeDirectoryBestEffort(temporaryDirectory);
+		}
 	}
 };
 
@@ -945,6 +954,24 @@ const runBenchmark = async (): Promise<void> => {
 	const adaptiveRoundOrders: Partial<Record<BenchmarkProbeName, string[][]>> = {};
 	let browser: Browser | undefined;
 	let server: Awaited<ReturnType<typeof startServer>> | undefined;
+	let shouldPreserveOutputDirectory = false;
+	const closeBenchmarkResources = async (): Promise<void> => {
+		const resources = [
+			...(browser ? [{ name: 'Chromium', closePromise: browser.close() }] : []),
+			...(server ? [{ name: 'benchmark server', closePromise: server.close() }] : []),
+		];
+
+		browser = undefined;
+		server = undefined;
+
+		const results = await Promise.allSettled(resources.map((resource) => resource.closePromise));
+
+		for (const [index, result] of results.entries()) {
+			if (result.status === 'rejected') {
+				process.emitWarning(`Could not close ${resources[index]!.name}: ${String(result.reason)}`);
+			}
+		}
+	};
 
 	try {
 		console.log(`Building ${benchmarkScenarios.length} benchmark scenarios and their controlled pages...`);
@@ -1111,17 +1138,20 @@ const runBenchmark = async (): Promise<void> => {
 			return;
 		}
 
-		rmSync(REPORTS_DIRECTORY, { recursive: true, force: true });
-		renameSync(outputDirectory, REPORTS_DIRECTORY);
+		shouldPreserveOutputDirectory = true;
+		await closeBenchmarkResources();
+		await replaceDirectory(outputDirectory, REPORTS_DIRECTORY);
+		shouldPreserveOutputDirectory = false;
 		console.log('Reports published. Rebuilding the site with summary.json...');
 		await build({ root: process.cwd() });
 		console.log('Full benchmark completed.');
 	} finally {
-		await browser?.close();
-		await server?.close();
+		await closeBenchmarkResources();
 
-		if (path.resolve(outputDirectory) !== REPORTS_DIRECTORY) {
-			rmSync(outputDirectory, { recursive: true, force: true });
+		if (shouldPreserveOutputDirectory) {
+			process.emitWarning(`Verified benchmark reports were preserved at ${outputDirectory}.`);
+		} else {
+			await removeDirectoryBestEffort(outputDirectory);
 		}
 	}
 };
