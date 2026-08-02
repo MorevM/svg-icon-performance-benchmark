@@ -369,11 +369,6 @@ export type BenchmarkManifest = {
 		node: string;
 
 		/**
-		 * pnpm version.
-		 */
-		pnpm: string;
-
-		/**
 		 * Chromium version reported by the launched browser.
 		 */
 		chromium: string;

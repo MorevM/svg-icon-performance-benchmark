@@ -629,7 +629,6 @@ const createManifest = (options: ManifestOptions): BenchmarkManifest => {
 		warmupScenarioId: WARMUP_SCENARIO_ID,
 		versions: {
 			node: process.version,
-			pnpm: execFileSync('pnpm', ['--version'], { encoding: 'utf8' }).trim(),
 			chromium: chromiumVersion,
 			lighthouse: lighthousePackage.version,
 			packages: {
