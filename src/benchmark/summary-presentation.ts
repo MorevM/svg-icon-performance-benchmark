@@ -23,10 +23,29 @@ type OverallDomainId =
 	| 'cpuRendering'
 	| 'footprint';
 
+/**
+ * A metric group with an explicit contribution to the Overall factor.
+ */
 type OverallDomain = {
+	/**
+	 * Stable identifier used in presentation breakdowns.
+	 */
 	id: OverallDomainId;
+
+	/**
+	 * Human-readable name shown in the UI.
+	 */
 	label: string;
+
+	/**
+	 * Metrics averaged equally inside the domain.
+	 */
 	metrics: readonly BenchmarkMetricName[];
+
+	/**
+	 * Relative weight used when combining domains.
+	 */
+	weight: number;
 };
 
 type ScenarioPresentation = BenchmarkScenarioSummary & {
@@ -37,6 +56,8 @@ type ScenarioPresentation = BenchmarkScenarioSummary & {
 
 const OVERALL_EQUIVALENCE_FACTOR = 1.05;
 const OVERALL_MAXIMUM_FACTOR = 4;
+const COMPLETION_OVERALL_WEIGHT = 0.05;
+const OTHER_OVERALL_DOMAIN_WEIGHT = (1 - COMPLETION_OVERALL_WEIGHT) / 4;
 const MAX_INSIGNIFICANT_TIME_DEVIATION_MS = 30;
 
 const mainMetricColumns: BenchmarkMetricColumn[] = [
@@ -171,26 +192,31 @@ const mainOverallDomains: OverallDomain[] = [
 		id: 'visualLoading',
 		label: 'Visual loading',
 		metrics: ['firstContentfulPaint', 'largestContentfulPaint'],
+		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 	{
 		id: 'responsiveness',
 		label: 'Responsiveness',
 		metrics: ['totalBlockingTime'],
+		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 	{
 		id: 'completion',
 		label: 'Completion',
 		metrics: ['loadEvent'],
+		weight: COMPLETION_OVERALL_WEIGHT,
 	},
 	{
 		id: 'cpuRendering',
 		label: 'CPU rendering',
 		metrics: ['parseHtml', 'styleAndLayout', 'paintCompositeAndRender'],
+		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 	{
 		id: 'footprint',
 		label: 'Footprint',
 		metrics: ['domNodes', 'requests', 'transferSize', 'documentSize'],
+		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 ];
 
@@ -200,6 +226,7 @@ const bonusOverallDomains: OverallDomain[] = [
 		id: 'cpuRendering',
 		label: 'CPU rendering',
 		metrics: ['totalMainThreadTime', 'scriptEvaluation'],
+		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 	{
 		id: 'footprint',
@@ -211,6 +238,7 @@ const bonusOverallDomains: OverallDomain[] = [
 			'documentSize',
 			'javascriptTransferSize',
 		],
+		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 ];
 
@@ -241,6 +269,22 @@ const getGeometricMean = (values: number[]): number => {
 
 	return Math.exp(
 		values.reduce((total, value) => total + Math.log(value), 0) / values.length,
+	);
+};
+
+const getWeightedGeometricMean = (values: number[], weights: number[]): number => {
+	if (values.length !== weights.length) {
+		throw new RangeError('Values and weights must contain the same number of items.');
+	}
+
+	const totalWeight = weights.reduce((total, weight) => total + weight, 0);
+
+	if (values.length === 0 || totalWeight <= 0) return 1;
+
+	return Math.exp(
+		values.reduce((total, value, index) => {
+			return total + Math.log(value) * weights[index]!;
+		}, 0) / totalWeight,
 	);
 };
 
@@ -317,7 +361,10 @@ const createScenarioPresentations = (
 
 			return [domain.id, getGeometricMean(domainMetricFactors)];
 		})) as Record<OverallDomainId, number>;
-		const overallFactor = getGeometricMean(Object.values(domainFactors));
+		const overallFactor = getWeightedGeometricMean(
+			overallDomains.map((domain) => domainFactors[domain.id]),
+			overallDomains.map((domain) => domain.weight),
+		);
 
 		return {
 			...scenario,
@@ -443,6 +490,7 @@ export {
 	getGeometricMean,
 	getMeasurementDeviations,
 	getOverallMetricFactor,
+	getWeightedGeometricMean,
 	hasSignificantMeasurementDeviation,
 	isMeasurementDeviationSignificant,
 	mainMetricColumns,

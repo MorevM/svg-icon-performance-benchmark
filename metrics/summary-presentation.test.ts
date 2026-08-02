@@ -5,12 +5,13 @@ import {
 	formatMetricRange,
 	getGeometricMean,
 	getOverallMetricFactor,
+	getWeightedGeometricMean,
 	isMeasurementDeviationSignificant,
 	mainOverallDomains,
 } from '~benchmark/summary-presentation';
 
 describe('Overall presentation', () => {
-	it('Defines five equally weighted domains without derived Lighthouse metrics', () => {
+	it('Defines five explicitly weighted domains without derived Lighthouse metrics', () => {
 		assert.deepEqual(
 			mainOverallDomains.map((domain) => domain.id),
 			[
@@ -31,6 +32,14 @@ describe('Overall presentation', () => {
 		assert.deepEqual(
 			mainOverallDomains.find((domain) => domain.id === 'visualLoading')?.metrics,
 			['firstContentfulPaint', 'largestContentfulPaint'],
+		);
+		assert.equal(
+			mainOverallDomains.reduce((total, domain) => total + domain.weight, 0),
+			1,
+		);
+		assert.equal(
+			mainOverallDomains.find((domain) => domain.id === 'completion')?.weight,
+			0.05,
 		);
 	});
 
@@ -77,10 +86,20 @@ describe('Overall presentation', () => {
 		);
 	});
 
-	it('Weights domain factors equally in the geometric mean', () => {
+	it('Averages metric factors equally inside a domain', () => {
 		assert.equal(
 			getGeometricMean([1, 1, 1, 1, 4]),
 			4 ** (1 / 5),
+		);
+	});
+
+	it('Weights the completion domain at five percent in Overall', () => {
+		assert.equal(
+			getWeightedGeometricMean(
+				[1, 1, 4, 1, 1],
+				mainOverallDomains.map((domain) => domain.weight),
+			),
+			4 ** 0.05,
 		);
 	});
 
