@@ -60,14 +60,6 @@ A successful full run writes:
 All raw values remain available for reviewing ranges and excluded outliers. Release reports are replaced only after the entire run
 and artifact validation succeed.
 
-## GitHub Pages
-
-The [Deploy to GitHub Pages workflow](./.github/workflows/deploy-pages.yml) builds and publishes the site after pushes to `master`,
-and can also be started manually. It publishes the checked-in benchmark reports; the expensive benchmark itself does not run in CI.
-
-Before the first deployment, open the repository's **Settings → Pages** and select **GitHub Actions** as the source.
-The workflow reads the configured Pages origin and base path, so both project sites and custom domains use correct internal links.
-
 ## Limitations
 
 These results are a Chromium laboratory stress test, not a prediction for every production page. They are most useful for comparing
