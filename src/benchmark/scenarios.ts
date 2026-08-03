@@ -7,7 +7,7 @@ const SHOWCASE_ICON_COUNTS = [BENCHMARK_ICON_COUNT, 5000, 20_000] as const;
 type BenchmarkMatrix = 'main' | 'bonus';
 
 /**
- * Selects the markup implementation used by a benchmark scenario.
+ * Selects the markup implementation used by a benchmark or runtime scenario.
  */
 type BenchmarkRenderer =
 	| 'img-icon'
@@ -159,17 +159,10 @@ const scenarioGroupInputs: ScenarioGroupInput[] = [
 			},
 			{
 				code: 'source-from-data-uri',
-				name: 'Source from data URI',
-				comparisonName: '<img /> (data URI)',
-				title: 'Source from data URI',
+				name: 'Source from data URL',
+				comparisonName: '<img /> (data URL)',
+				title: 'Source from data URL',
 				renderer: 'img-data-uri',
-			},
-			{
-				code: 'source-from-base64',
-				name: 'Source from base64',
-				comparisonName: '<img /> (base64)',
-				title: 'Source from base64',
-				renderer: 'img-base64',
 			},
 		],
 	},
@@ -229,17 +222,10 @@ const scenarioGroupInputs: ScenarioGroupInput[] = [
 			},
 			{
 				code: 'source-as-data-uri',
-				name: 'Source as data URI',
-				comparisonName: 'background-image (data URI)',
-				title: 'background-image with source from data URI',
+				name: 'Source as data URL',
+				comparisonName: 'background-image (data URL)',
+				title: 'background-image with source from data URL',
 				renderer: 'background-data-uri',
-			},
-			{
-				code: 'source-as-base64',
-				name: 'Source as base64',
-				comparisonName: 'background-image (base64)',
-				title: 'background-image with source from base64',
-				renderer: 'background-base64',
 			},
 		],
 	},
@@ -264,17 +250,10 @@ const scenarioGroupInputs: ScenarioGroupInput[] = [
 			},
 			{
 				code: 'source-as-data-uri',
-				name: 'Source as data URI',
-				comparisonName: 'mask-image (data URI)',
-				title: 'mask-image with source from data URI',
+				name: 'Source as data URL',
+				comparisonName: 'mask-image (data URL)',
+				title: 'mask-image with source from data URL',
 				renderer: 'mask-data-uri',
-			},
-			{
-				code: 'source-as-base64',
-				name: 'Source as base64',
-				comparisonName: 'mask-image (base64)',
-				title: 'mask-image with source from base64',
-				renderer: 'mask-base64',
 			},
 		],
 	},

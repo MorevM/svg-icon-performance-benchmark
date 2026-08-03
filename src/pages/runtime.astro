@@ -36,12 +36,43 @@ const getPreloadSources = (renderer: BenchmarkRenderer): string[] => {
 	}
 };
 
+const runtimeOnlyScenarios = [
+	{
+		groupId: 'img',
+		id: 'img-source-from-base64',
+		name: 'Source from Base64 data URL',
+		renderer: 'img-base64',
+	},
+	{
+		groupId: 'background-image',
+		id: 'background-image-source-as-base64',
+		name: 'Source as Base64 data URL',
+		renderer: 'background-base64',
+	},
+	{
+		groupId: 'mask-image',
+		id: 'mask-image-source-as-base64',
+		name: 'Source as Base64 data URL',
+		renderer: 'mask-base64',
+	},
+] satisfies Array<{
+	groupId: string;
+	id: string;
+	name: string;
+	renderer: BenchmarkRenderer;
+}>;
+
 const runtimeScenarioGroups = benchmarkScenarioGroups
 	.filter((group) => group.matrix === 'main')
 	.map((group) => {
+		const scenarios = [
+			...group.scenarios,
+			...runtimeOnlyScenarios.filter((scenario) => scenario.groupId === group.id),
+		];
+
 		return {
 			name: group.name,
-			scenarios: group.scenarios.map((scenario) => {
+			scenarios: scenarios.map((scenario) => {
 				return {
 					id: scenario.id,
 					label: `${group.name} — ${scenario.name}`,
@@ -141,12 +172,14 @@ const inlinedSymbolSprite = createSymbolSprite(icons).replace('<svg ', '<svg hid
 
 		<p class="runtime-test__status" id="runtime-status" aria-live="polite">Ready to render.</p>
 		<p class="runtime-test__description" id="runtime-test-description">
-			This client-side microbenchmark reuses the exact icon markup from the generated browser-native scenario pages.
-			String generation and external-source warming happen before one discarded warm-up and 3–15 measured runs. Each
-			run clears the previous DOM and gives the browser an idle period before measurement. The primary result is the
-			median DOM insertion plus forced style and layout. Frame latency remains tied to the display refresh cycle, so its
-			median and full range are reported separately. It complements rather than replaces the cold-load benchmark. Vue
-			scenarios are omitted because mounting a client app would measure a different operation.
+			This client-side microbenchmark uses the same icon markup generators as the browser-native scenario pages and also
+			keeps the Base64 data URL variants excluded from the main comparison. String generation and external-source
+			warming happen before one discarded warm-up and 3–15 measured runs. Each run clears the previous DOM and gives the
+			browser an idle period before measurement. The primary result is the median DOM insertion plus forced style and
+			layout.
+			Frame latency remains tied to the display refresh cycle, so its median and full range are reported separately. It
+			complements rather than replaces the cold-load benchmark. Vue scenarios are omitted because mounting a client app
+			would measure a different operation.
 		</p>
 
 		<!-- Runtime output -->

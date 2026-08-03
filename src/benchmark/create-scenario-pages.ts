@@ -112,7 +112,7 @@ const getSymbolSpriteSource = (iconName: string): string => withBasePath(`/symbo
  *
  * @returns             One markup fragment per icon for browser-native renderers.
  *
- * @throws When the renderer is not part of the benchmark matrix.
+ * @throws When the renderer is not supported by the shared markup generator.
  */
 const createItemsMarkup = (
 	renderer: BenchmarkRenderer,

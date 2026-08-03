@@ -818,6 +818,13 @@ const reaggregateReports = async (): Promise<void> => {
 		const existingScenarios = new Map(existingSummary.scenarios.map((scenario) => {
 			return [scenario.id, scenario];
 		}));
+		const scenarioIds = benchmarkScenarios.map((scenario) => scenario.id);
+		const scenarioIdSet = new Set(scenarioIds);
+		const filterRoundOrders = (roundOrders: string[][]): string[][] => {
+			return roundOrders.map((roundOrder) => {
+				return roundOrder.filter((scenarioId) => scenarioIdSet.has(scenarioId));
+			});
+		};
 		const scenarioMeasurements = new Map<string, ScenarioProbeMeasurements>();
 
 		for (const scenario of benchmarkScenarios) {
@@ -887,6 +894,7 @@ const reaggregateReports = async (): Promise<void> => {
 			...existingManifest,
 			schemaVersion: 4,
 			probeMeasurementCounts,
+			roundOrders: filterRoundOrders(existingManifest.roundOrders),
 			adaptiveMeasurements: {
 				...existingManifest.adaptiveMeasurements,
 				additionalRunCount: ADAPTIVE_RUN_COUNT,
@@ -897,7 +905,7 @@ const reaggregateReports = async (): Promise<void> => {
 				triggerOutlierCount: 1,
 				probeRoundOrders: Object.fromEntries(benchmarkProbeNames.flatMap((probe) => {
 					const orders = existingManifest.adaptiveMeasurements.probeRoundOrders[probe];
-					return orders ? [[probe, orders]] : [];
+					return orders ? [[probe, filterRoundOrders(orders)]] : [];
 				})),
 				selectionPolicy: ADAPTIVE_SELECTION_POLICY,
 			},
@@ -907,7 +915,13 @@ const reaggregateReports = async (): Promise<void> => {
 				renderWindowStart: existingManifest.controlledMeasurements.renderWindowStart,
 				renderWindowEnd: existingManifest.controlledMeasurements.renderWindowEnd,
 			},
+			scenarioIds,
 		};
+
+		for (const scenarioDirectory of globSync(path.join(outputDirectory, 'scenarios', '*'))) {
+			if (scenarioIdSet.has(path.basename(scenarioDirectory))) continue;
+			rmSync(scenarioDirectory, { recursive: true, force: true });
+		}
 
 		for (const scenario of benchmarkScenarios) {
 			rmSync(
