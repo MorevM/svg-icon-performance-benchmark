@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+	bonusMetricColumns,
 	bonusOverallDomains,
 	formatMetricRange,
 	getGeometricMean,
 	getOverallMetricFactor,
 	getWeightedGeometricMean,
 	isMeasurementDeviationSignificant,
+	mainMetricColumns,
 	mainOverallDomains,
 } from '~benchmark/summary-presentation';
 
@@ -25,13 +27,31 @@ describe('Overall presentation', () => {
 
 		const metricNames = new Set(mainOverallDomains.flatMap((domain) => domain.metrics));
 
+		assert.equal(mainMetricColumns.some((column) => column.label === 'LCP'), false);
+		assert.deepEqual(
+			bonusMetricColumns.map((column) => column.name),
+			[
+				'performanceScore',
+				'firstContentfulPaint',
+				'timeToInteractive',
+				'totalBlockingTime',
+				'speedIndex',
+				'loadEvent',
+				'totalMainThreadTime',
+				'scriptEvaluation',
+				'javascriptTransferSize',
+				'domNodes',
+				'requests',
+				'transferSize',
+				'documentSize',
+			],
+		);
 		assert.equal(metricNames.has('performanceScore'), false);
-		assert.equal(metricNames.has('largestContentfulPaint'), true);
 		assert.equal(metricNames.has('timeToInteractive'), false);
 		assert.equal(metricNames.has('speedIndex'), false);
 		assert.deepEqual(
 			mainOverallDomains.find((domain) => domain.id === 'visualLoading')?.metrics,
-			['firstContentfulPaint', 'largestContentfulPaint'],
+			['firstContentfulPaint'],
 		);
 		assert.equal(
 			mainOverallDomains.reduce((total, domain) => total + domain.weight, 0),

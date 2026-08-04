@@ -15,7 +15,6 @@ import type { BenchmarkRunMetrics } from '~benchmark/report-contracts';
 const createRun = (value: number): BenchmarkRunMetrics => {
 	return {
 		firstContentfulPaint: value,
-		largestContentfulPaint: value,
 		timeToInteractive: value,
 		totalBlockingTime: value,
 		lighthouseTotalBlockingTime: value,

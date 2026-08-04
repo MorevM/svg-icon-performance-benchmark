@@ -11,7 +11,6 @@ const benchmarkProbeNames = [
 const probeTimingMetricNames = {
 	lighthouse: [
 		'firstContentfulPaint',
-		'largestContentfulPaint',
 		'timeToInteractive',
 		'lighthouseTotalBlockingTime',
 		'speedIndex',

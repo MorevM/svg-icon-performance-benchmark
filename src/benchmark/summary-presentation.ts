@@ -76,13 +76,6 @@ const mainMetricColumns: BenchmarkMetricColumn[] = [
 		unit: 'milliseconds',
 	},
 	{
-		name: 'largestContentfulPaint',
-		label: 'LCP',
-		title: 'Largest Contentful Paint',
-		direction: 'lower',
-		unit: 'milliseconds',
-	},
-	{
 		name: 'timeToInteractive',
 		label: 'TTI',
 		title: 'Time to Interactive',
@@ -162,7 +155,7 @@ const mainMetricColumns: BenchmarkMetricColumn[] = [
 ];
 
 const bonusMetricColumns: BenchmarkMetricColumn[] = [
-	...mainMetricColumns.slice(0, 7),
+	...mainMetricColumns.slice(0, 6),
 	{
 		name: 'totalMainThreadTime',
 		label: 'Main thread',
@@ -184,14 +177,14 @@ const bonusMetricColumns: BenchmarkMetricColumn[] = [
 		direction: 'lower',
 		unit: 'bytes',
 	},
-	...mainMetricColumns.slice(10),
+	...mainMetricColumns.slice(9),
 ];
 
 const mainOverallDomains: OverallDomain[] = [
 	{
 		id: 'visualLoading',
 		label: 'Visual loading',
-		metrics: ['firstContentfulPaint', 'largestContentfulPaint'],
+		metrics: ['firstContentfulPaint'],
 		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 	{

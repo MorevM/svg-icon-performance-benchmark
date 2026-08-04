@@ -45,7 +45,6 @@ type AdaptiveMeasurementSelection = {
 
 const benchmarkMetricNames = [
 	'firstContentfulPaint',
-	'largestContentfulPaint',
 	'timeToInteractive',
 	'totalBlockingTime',
 	'lighthouseTotalBlockingTime',

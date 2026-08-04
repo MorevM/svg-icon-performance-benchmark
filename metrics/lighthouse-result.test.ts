@@ -6,6 +6,23 @@ import {
 } from './lighthouse-result';
 
 describe('Lighthouse result', () => {
+	it('Omits LCP from published metrics', () => {
+		const metrics = extractBenchmarkMetrics({
+			audits: {
+				metrics: {
+					details: {
+						items: [{ largestContentfulPaint: 1234 }],
+					},
+				},
+			},
+			categories: {
+				performance: { score: 1 },
+			},
+		} as unknown as Parameters<typeof extractBenchmarkMetrics>[0]);
+
+		assert.equal('largestContentfulPaint' in metrics, false);
+	});
+
 	it('Uses the observed Lighthouse load event as the published Load metric', () => {
 		const metrics = extractBenchmarkMetrics({
 			audits: {

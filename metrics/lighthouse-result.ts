@@ -3,7 +3,6 @@ import type { BenchmarkRunMetrics } from '~benchmark/report-contracts';
 
 type LighthouseMetrics = {
 	firstContentfulPaint?: number;
-	largestContentfulPaint?: number;
 	interactive?: number;
 	totalBlockingTime?: number;
 	speedIndex?: number;
@@ -61,7 +60,6 @@ const extractBenchmarkMetrics = (lhr: LighthouseResult): BenchmarkRunMetrics => 
 
 	return {
 		firstContentfulPaint: toFiniteNumber(metrics.firstContentfulPaint),
-		largestContentfulPaint: toFiniteNumber(metrics.largestContentfulPaint),
 		timeToInteractive: toFiniteNumber(metrics.interactive),
 		totalBlockingTime: null,
 		lighthouseTotalBlockingTime: toFiniteNumber(metrics.totalBlockingTime),

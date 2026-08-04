@@ -5,7 +5,6 @@ import type { BenchmarkMatrix } from './scenarios';
  */
 export type BenchmarkMetricName =
 	| 'firstContentfulPaint'
-	| 'largestContentfulPaint'
 	| 'timeToInteractive'
 	| 'totalBlockingTime'
 	| 'lighthouseTotalBlockingTime'
