@@ -13,7 +13,7 @@ import {
 } from '~benchmark/summary-presentation';
 
 describe('Overall presentation', () => {
-	it('Defines five explicitly weighted domains without derived Lighthouse metrics', () => {
+	it('Defines five explicitly weighted domains', () => {
 		assert.deepEqual(
 			mainOverallDomains.map((domain) => domain.id),
 			[
@@ -47,11 +47,12 @@ describe('Overall presentation', () => {
 			],
 		);
 		assert.equal(metricNames.has('performanceScore'), false);
+		assert.equal(metricNames.has('firstContentfulPaint'), false);
 		assert.equal(metricNames.has('timeToInteractive'), false);
-		assert.equal(metricNames.has('speedIndex'), false);
+		assert.equal(metricNames.has('speedIndex'), true);
 		assert.deepEqual(
 			mainOverallDomains.find((domain) => domain.id === 'visualLoading')?.metrics,
-			['firstContentfulPaint'],
+			['speedIndex'],
 		);
 		assert.equal(
 			mainOverallDomains.reduce((total, domain) => total + domain.weight, 0),
@@ -120,6 +121,18 @@ describe('Overall presentation', () => {
 				mainOverallDomains.map((domain) => domain.weight),
 			),
 			4 ** 0.05,
+		);
+	});
+
+	it('Weights Speed Index as the Visual loading domain', () => {
+		const visualLoadingWeight = mainOverallDomains.find((domain) => domain.id === 'visualLoading')!.weight;
+
+		assert.equal(
+			getWeightedGeometricMean(
+				[2, 1, 1, 1, 1],
+				mainOverallDomains.map((domain) => domain.weight),
+			),
+			2 ** visualLoadingWeight,
 		);
 	});
 

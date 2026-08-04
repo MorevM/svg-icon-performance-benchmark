@@ -184,7 +184,7 @@ const mainOverallDomains: OverallDomain[] = [
 	{
 		id: 'visualLoading',
 		label: 'Visual loading',
-		metrics: ['firstContentfulPaint'],
+		metrics: ['speedIndex'],
 		weight: OTHER_OVERALL_DOMAIN_WEIGHT,
 	},
 	{
