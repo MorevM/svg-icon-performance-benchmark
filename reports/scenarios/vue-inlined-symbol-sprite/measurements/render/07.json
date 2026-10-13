@@ -1,17 +1,17 @@
 {
 	"schemaVersion": 2,
 	"probe": "render",
-	"totalBlockingTime": 244,
-	"startTime": 140.69999999925494,
-	"endTime": 1322.3999999985099,
+	"totalBlockingTime": 280,
+	"startTime": 132.80000000074506,
+	"endTime": 1312.6000000014901,
 	"longTasks": [
 		{
-			"startTime": 139.29999999701977,
-			"duration": 229
+			"startTime": 131.30000000074506,
+			"duration": 252
 		},
 		{
-			"startTime": 401.5999999977648,
-			"duration": 115
+			"startTime": 418.5,
+			"duration": 128
 		}
 	]
 }
