@@ -62,4 +62,16 @@ describe('Lighthouse result', () => {
 			3,
 		);
 	});
+
+	it('Counts the icon-mask stylesheet with deployment base paths and query parameters', () => {
+		assert.equal(
+			getMethodSpecificRequestCount([
+				{ resourceType: 'Document', url: 'http://localhost/page/' },
+				{ resourceType: 'Stylesheet', url: 'http://localhost/page.css' },
+				{ resourceType: 'Stylesheet', url: 'http://localhost/icon-masks.css' },
+				{ resourceType: 'Stylesheet', url: 'http://localhost/benchmark/icon-masks.css?v=1' },
+			]),
+			2,
+		);
+	});
 });

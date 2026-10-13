@@ -1,4 +1,5 @@
 const BENCHMARK_ICON_COUNT = 1000;
+const ICON_MASKS_STYLESHEET_PATH = '/icon-masks.css';
 const SHOWCASE_ICON_COUNTS = [BENCHMARK_ICON_COUNT, 5000, 20_000] as const;
 
 /**
@@ -25,6 +26,7 @@ type BenchmarkRenderer =
 	| 'mask-icon'
 	| 'mask-stacked-sprite'
 	| 'mask-data-uri'
+	| 'mask-css-data-uri'
 	| 'mask-base64'
 	| 'vue-inline-svg-components'
 	| 'vue-inlined-symbol-sprite';
@@ -255,6 +257,13 @@ const scenarioGroupInputs: ScenarioGroupInput[] = [
 				title: 'mask-image with source from data URL',
 				renderer: 'mask-data-uri',
 			},
+			{
+				code: 'source-from-css',
+				name: 'Source from CSS custom property',
+				comparisonName: 'mask-image (CSS data URL)',
+				title: 'mask-image with named data URLs from an external stylesheet',
+				renderer: 'mask-css-data-uri',
+			},
 		],
 	},
 	{
@@ -347,6 +356,7 @@ export {
 	benchmarkScenarios,
 	getScenarioBarePagePath,
 	getScenarioPagePath,
+	ICON_MASKS_STYLESHEET_PATH,
 	SHOWCASE_ICON_COUNTS,
 };
 export type {

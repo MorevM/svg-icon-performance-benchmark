@@ -1,6 +1,11 @@
 ---
+import { withBasePath } from '#utils';
 import { createBenchmarkPages } from '~benchmark/create-scenario-pages';
-import { BENCHMARK_ICON_COUNT, getScenarioBarePagePath } from '~benchmark/scenarios';
+import {
+	BENCHMARK_ICON_COUNT,
+	getScenarioBarePagePath,
+	ICON_MASKS_STYLESHEET_PATH,
+} from '~benchmark/scenarios';
 import BenchmarkScenarioContent from '~components/benchmark-scenario-content/benchmark-scenario-content.astro';
 import PageTitle from '~components/page-title/page-title.astro';
 import LayoutBare from '~layouts/layout-bare/layout-bare.astro';
@@ -13,6 +18,9 @@ export const getStaticPaths = () => createBenchmarkPages();
 type Props = BenchmarkPageProps;
 
 const { scenario, itemsMarkup, iconNames, styles, extraContent, kind } = Astro.props;
+const iconMasksStylesheetPath = scenario.renderer === 'mask-css-data-uri'
+	? withBasePath(ICON_MASKS_STYLESHEET_PATH)
+	: undefined;
 const title = `${scenario.title} - ${iconNames.length} items`;
 const reportPath = kind === 'showcase' && iconNames.length === BENCHMARK_ICON_COUNT
 	? scenario.reportPath
@@ -34,6 +42,7 @@ const scenarioContentProps = {
 			<LayoutDefault lang="en" title={title}>
 				<!-- Scenario styles -->
 				{ styles && <style is:inline set:html={styles} slot="head"></style> }
+				{ iconMasksStylesheetPath && <link rel="stylesheet" href={iconMasksStylesheetPath} slot="head" /> }
 
 				<!-- Page heading -->
 				<PageTitle
@@ -55,6 +64,7 @@ const scenarioContentProps = {
 			>
 				<!-- Scenario styles -->
 				{ styles && <style is:inline set:html={styles} slot="head"></style> }
+				{ iconMasksStylesheetPath && <link rel="stylesheet" href={iconMasksStylesheetPath} slot="head" /> }
 
 				{
 					kind === 'controlled'

@@ -201,6 +201,11 @@ const createItemsMarkup = (
 				return `<div class="mask-image" style="--mask-image: url('${svgToDataUri(icons[iconName]!)}')"></div>`;
 			});
 
+		case 'mask-css-data-uri':
+			return iconNames.map((iconName) => {
+				return `<div class="mask-image" style="--mask-image: var(--icon-${iconName})"></div>`;
+			});
+
 		case 'mask-base64':
 			return iconNames.map((iconName) => {
 				return `<div class="mask-image" style="--mask-image: url('${svgToBase64(icons[iconName]!)}')"></div>`;

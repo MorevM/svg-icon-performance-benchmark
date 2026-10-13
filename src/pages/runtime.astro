@@ -1,7 +1,7 @@
 ---
 import { createSymbolSprite, fetchAllSvg, withBasePath } from '#utils';
 import { createItemsMarkup } from '~benchmark/create-scenario-pages';
-import { benchmarkScenarioGroups } from '~benchmark/scenarios';
+import { benchmarkScenarioGroups, ICON_MASKS_STYLESHEET_PATH } from '~benchmark/scenarios';
 import PageTitle from '~components/page-title/page-title.astro';
 import LayoutDefault from '~layouts/layout-default/layout-default.astro';
 import type { BenchmarkRenderer } from '~benchmark/scenarios';
@@ -30,6 +30,9 @@ const getPreloadSources = (renderer: BenchmarkRenderer): string[] => {
 
 		case 'external-symbol-sprite':
 			return [symbolSpriteSource];
+
+		case 'mask-css-data-uri':
+			return [withBasePath(ICON_MASKS_STYLESHEET_PATH)];
 
 		default:
 			return [];
@@ -91,6 +94,9 @@ const inlinedSymbolSprite = createSymbolSprite(icons).replace('<svg ', '<svg hid
 ---
 
 <LayoutDefault lang="en" title="Runtime SVG icon stress test">
+	<!-- Shared mask sources -->
+	<link rel="stylesheet" href={withBasePath(ICON_MASKS_STYLESHEET_PATH)} slot="head" />
+
 	<!-- Page heading -->
 	<PageTitle title="Runtime SVG icon stress test" slot="title" />
 

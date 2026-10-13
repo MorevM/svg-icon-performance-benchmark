@@ -1,3 +1,4 @@
+import { ICON_MASKS_STYLESHEET_PATH } from '~benchmark/scenarios';
 import type { Result as LighthouseResult } from 'lighthouse';
 import type { BenchmarkRunMetrics } from '~benchmark/report-contracts';
 
@@ -24,11 +25,14 @@ type NetworkEntry = {
 
 const getMethodSpecificRequestCount = (entries: NetworkEntry[]): number => {
 	return entries.filter((entry) => {
-		const isHttpRequest = /^https?:\/\//.test(entry.url ?? '');
-		const isSharedPageResource = entry.resourceType === 'Document'
-			|| entry.resourceType === 'Stylesheet';
+		const url = entry.url ?? '';
+		if (!/^https?:\/\//.test(url)) return false;
 
-		return isHttpRequest && !isSharedPageResource;
+		const isIconMasksStylesheet = new URL(url).pathname.endsWith(ICON_MASKS_STYLESHEET_PATH);
+		const isSharedPageResource = entry.resourceType === 'Document'
+			|| (entry.resourceType === 'Stylesheet' && !isIconMasksStylesheet);
+
+		return !isSharedPageResource;
 	}).length;
 };
 
